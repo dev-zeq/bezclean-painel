@@ -1,39 +1,36 @@
 <!doctype html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#16785a" />
-    <title>Bezclean | Painel</title>
-    <link rel="stylesheet" href="assets/css/styles.css" />
-  </head>
-  <body>
-    <div id="app">
-      <header class="topbar">
-        <a class="brand" href="./" aria-label="Bezclean Painel">
-          <span class="brand-mark">B</span>
-          <span>Bezclean</span>
-        </a>
-        <p class="topbar-title">Painel de gestão</p>
-      </header>
-
-      <main class="page-shell">
-        <section class="hero">
-          <span class="eyebrow">Em construção</span>
-          <h1>Agenda Bezclean</h1>
-          <p>
-            Aqui você vai organizar atendimentos, clientes, regiões, serviços,
-            valores e lembretes pelo WhatsApp.
-          </p>
-        </section>
-
-        <section class="next-step" aria-labelledby="proximo-passo">
-          <h2 id="proximo-passo">Próximo módulo</h2>
-          <p>Vamos montar a Agenda primeiro, já considerando deslocamentos e bloqueios de horário.</p>
-        </section>
-      </main>
-    </div>
-
-    <script type="module" src="assets/js/app.js"></script>
-  </body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#102e27" />
+  <title>Bezclean — Agenda</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <section id="authView" class="auth-view">
+      <div class="brand"><span class="brand-mark">B</span><div><strong>Bezclean</strong><small>Painel operacional</small></div></div>
+      <form id="authForm" class="auth-card">
+        <p class="eyebrow">BEM-VINDO</p><h1>Entrar no painel</h1><p>Use seu e-mail para acessar sua agenda.</p>
+        <label>E-mail<input id="email" type="email" autocomplete="email" required placeholder="voce@email.com"></label>
+        <label>Senha<input id="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Mínimo de 6 caracteres"></label>
+        <button class="primary" type="submit">Entrar</button><button id="signUpBtn" class="text-button" type="button">Ainda não tenho conta</button>
+        <p id="authMessage" class="form-message"></p>
+      </form>
+    </section>
+    <section id="panelView" class="panel-view hidden">
+      <header class="topbar"><div class="brand"><span class="brand-mark">B</span><div><strong>Bezclean</strong><small>Agenda de serviços</small></div></div><button id="signOutBtn" class="ghost-button">Sair</button></header>
+      <div class="page">
+        <div class="page-heading"><div><p class="eyebrow">OPERAÇÃO</p><h1>Agenda</h1></div><div class="heading-actions"><button id="blockBtn" class="secondary">Bloquear horário</button><button id="newAppointmentBtn" class="primary">+ Novo agendamento</button></div></div>
+        <section class="summary-grid"><article><span>Atendimentos hoje</span><strong id="todayCount">0</strong></article><article><span>Previsão do dia</span><strong id="todayValue">R$ 0,00</strong></article><article><span>Próximo atendimento</span><strong id="nextAppointment">Livre</strong></article></section>
+        <section class="agenda-card"><div class="agenda-toolbar"><div class="date-navigation"><button id="previousDay" aria-label="Dia anterior">←</button><button id="todayBtn">Hoje</button><button id="nextDay" aria-label="Próximo dia">→</button></div><h2 id="selectedDate"></h2></div><div id="agendaContent" class="agenda-content"></div></section>
+      </div>
+    </section>
+  </main>
+  <dialog id="appointmentDialog"><form id="appointmentForm" class="modal-card"><div class="modal-heading"><div><p class="eyebrow">NOVO SERVIÇO</p><h2>Novo agendamento</h2></div><button class="icon-button" type="button" data-close="appointmentDialog">×</button></div><div class="form-grid"><label>Cliente<input id="clientName" required placeholder="Nome completo"></label><label>WhatsApp<input id="clientPhone" required placeholder="(47) 99999-9999"></label><label class="full">Serviço / estofado<input id="serviceDescription" required placeholder="Ex.: Sofá 3 lugares + 2 poltronas"></label><label>Data<input id="appointmentDate" type="date" required></label><label>Horário<input id="appointmentTime" type="time" required value="08:00"></label><label>Duração<input id="duration" type="number" required min="30" step="30" value="120"><small> minutos</small></label><label>Valor<input id="appointmentValue" type="number" required min="0" step="0.01" placeholder="0,00"></label><label class="full">Endereço<input id="appointmentAddress" placeholder="Rua, número, bairro e cidade"></label><label class="full">Observações<textarea id="appointmentNotes" rows="3" placeholder="Detalhes, acesso, manchas…"></textarea></label></div><div class="modal-actions"><button class="secondary" type="button" data-close="appointmentDialog">Cancelar</button><button class="primary" type="submit">Salvar agendamento</button></div><p id="appointmentMessage" class="form-message"></p></form></dialog>
+  <dialog id="blockDialog"><form id="blockForm" class="modal-card compact"><div class="modal-heading"><div><p class="eyebrow">INDISPONIBILIDADE</p><h2>Bloquear horário</h2></div><button class="icon-button" type="button" data-close="blockDialog">×</button></div><div class="form-grid"><label>Data<input id="blockDate" type="date" required></label><label>Início<input id="blockStart" type="time" required value="08:00"></label><label>Fim<input id="blockEnd" type="time" required value="10:00"></label><label class="full">Motivo<input id="blockReason" placeholder="Ex.: Atendimento pessoal"></label></div><div class="modal-actions"><button class="secondary" type="button" data-close="blockDialog">Cancelar</button><button class="primary" type="submit">Salvar bloqueio</button></div><p id="blockMessage" class="form-message"></p></form></dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="assets/js/app.js"></script>
+</body>
 </html>
