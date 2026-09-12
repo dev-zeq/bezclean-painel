@@ -1,0 +1,109 @@
+:root {
+  color-scheme: light;
+  --ink: #17302a;
+  --muted: #63746e;
+  --surface: #ffffff;
+  --canvas: #f5f8f6;
+  --accent: #16785a;
+  --accent-soft: #daf2e8;
+  --border: #dce7e1;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  color: var(--ink);
+  background: var(--canvas);
+}
+
+.topbar {
+  min-height: 68px;
+  padding: 0 5vw;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: inherit;
+  font-weight: 800;
+  font-size: 1.06rem;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: white;
+  background: var(--accent);
+  border-radius: 10px;
+}
+
+.topbar-title,
+.eyebrow {
+  margin: 0;
+  color: var(--muted);
+  font-size: .875rem;
+}
+
+.page-shell {
+  width: min(100% - 40px, 960px);
+  margin: 0 auto;
+  padding: clamp(44px, 10vw, 100px) 0;
+}
+
+.hero { max-width: 680px; }
+
+.eyebrow {
+  display: inline-block;
+  margin-bottom: 12px;
+  color: var(--accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  font-size: .72rem;
+}
+
+h1, h2 { letter-spacing: -.035em; }
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 7vw, 4.5rem);
+  line-height: 1;
+}
+
+.hero p {
+  max-width: 600px;
+  margin: 20px 0 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1.65;
+}
+
+.next-step {
+  margin-top: 48px;
+  padding: 26px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.next-step h2 { margin: 0; font-size: 1.25rem; }
+.next-step p { margin: 10px 0 0; color: var(--muted); line-height: 1.55; }
+
+@media (max-width: 540px) {
+  .topbar { padding: 0 20px; }
+  .topbar-title { display: none; }
+  .page-shell { width: min(100% - 32px, 960px); }
+}
