@@ -9,7 +9,7 @@ const pad=n=>String(n).padStart(2,"0");
 const dateKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const displayDate=d=>new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"2-digit",month:"long"}).format(d);
 const asLocal=(date,time)=>new Date(`${date}T${time}:00`);
-const showMessage=(id,message,ok=false)=>{const node=$(id);node.textContent=message;node.style.color=ok?"var(--accent)":"var(--danger)"};
+const showMessage=(id,message,ok=false)=>{const node=$(id);node.textContent=message;node.style.color=ok?"var(--success)":"var(--danger)"};
 const toast=message=>{const node=$("toast");node.textContent=message;node.classList.add("show");setTimeout(()=>node.classList.remove("show"),3200)};
 
 function setView(session){$("authView").classList.toggle("hidden",!!session);$("panelView").classList.toggle("hidden",!session);if(session)loadAgenda()}
