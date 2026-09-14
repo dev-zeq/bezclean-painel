@@ -3,16 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#102e27" />
-  <title>Bezclean — Agenda</title>
+  <meta name="theme-color" content="#0b3867" />
+  <title>Bez Clean — Agenda</title>
   <link rel="stylesheet" href="assets/css/styles.css" />
 </head>
 <body>
   <main class="app-shell">
     <section id="authView" class="auth-view">
-      <div class="brand"><span class="brand-mark">B</span><div><strong>Bezclean</strong><small>Painel operacional</small></div></div>
+      <div class="brand brand-login">
+        <img class="brand-logo" src="https://bezclean.com.br/imagens/LOGO.png" alt="Bez Clean" />
+        <div><strong>Bez Clean</strong><small>Painel operacional</small></div>
+      </div>
       <form id="authForm" class="auth-card">
-        <p class="eyebrow">BEM-VINDO</p><h1>Entrar no painel</h1><p>Use seu e-mail para acessar sua agenda.</p>
+        <p class="eyebrow">ÁREA OPERACIONAL</p><h1>Entrar no painel</h1><p>Organize sua agenda de atendimentos em um só lugar.</p>
         <label>E-mail<input id="email" type="email" autocomplete="email" required placeholder="voce@email.com"></label>
         <label>Senha<input id="password" type="password" autocomplete="current-password" required minlength="6" placeholder="Mínimo de 6 caracteres"></label>
         <button class="primary" type="submit">Entrar</button><button id="signUpBtn" class="text-button" type="button">Ainda não tenho conta</button>
@@ -20,7 +23,7 @@
       </form>
     </section>
     <section id="panelView" class="panel-view hidden">
-      <header class="topbar"><div class="brand"><span class="brand-mark">B</span><div><strong>Bezclean</strong><small>Agenda de serviços</small></div></div><button id="signOutBtn" class="ghost-button">Sair</button></header>
+      <header class="topbar"><div class="brand"><img class="brand-logo" src="https://bezclean.com.br/imagens/LOGO.png" alt="Bez Clean" /><div><strong>Bez Clean</strong><small>Agenda de serviços</small></div></div><button id="signOutBtn" class="ghost-button">Sair</button></header>
       <div class="page">
         <div class="page-heading"><div><p class="eyebrow">OPERAÇÃO</p><h1>Agenda</h1></div><div class="heading-actions"><button id="blockBtn" class="secondary">Bloquear horário</button><button id="newAppointmentBtn" class="primary">+ Novo agendamento</button></div></div>
         <section class="summary-grid"><article><span>Atendimentos hoje</span><strong id="todayCount">0</strong></article><article><span>Previsão do dia</span><strong id="todayValue">R$ 0,00</strong></article><article><span>Próximo atendimento</span><strong id="nextAppointment">Livre</strong></article></section>
