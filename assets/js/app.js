@@ -1,91 +1,15 @@
-const SUPABASE_URL="https://qunaqtxadifmwbmycqum.supabase.co";
-const SUPABASE_KEY="sb_publishable_iMbIE9yLK6VGMLaEsYFbHA_S42mbd0W";
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-let currentDate=new Date();currentDate.setHours(0,0,0,0);
-
-const $=id=>document.getElementById(id);
-const fmtMoney=value=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(value||0));
-const pad=n=>String(n).padStart(2,"0");
-const dateKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const displayDate=d=>new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"2-digit",month:"long"}).format(d);
-const asLocal=(date,time)=>new Date(`${date}T${time}:00`);
-const showMessage=(id,message,ok=false)=>{const node=$(id);node.textContent=message;node.style.color=ok?"var(--success)":"var(--danger)"};
-const toast=message=>{const node=$("toast");node.textContent=message;node.classList.add("show");setTimeout(()=>node.classList.remove("show"),3200)};
-
-function setView(session){$("authView").classList.toggle("hidden",!!session);$("panelView").classList.toggle("hidden",!session);if(session)loadAgenda()}
-
-async function loadAgenda(){
-  $("selectedDate").textContent=displayDate(currentDate);
-  const start=new Date(currentDate),end=new Date(currentDate);end.setDate(end.getDate()+1);
-  const [appointments,blocks]=await Promise.all([
-    db.from("agendamentos").select("id,inicio_em,fim_em,descricao_servico,valor,status,endereco,clientes(nome,telefone)").gte("inicio_em",start.toISOString()).lt("inicio_em",end.toISOString()).order("inicio_em"),
-    db.from("bloqueios_agenda").select("id,inicio_em,fim_em,motivo").gte("inicio_em",start.toISOString()).lt("inicio_em",end.toISOString()).order("inicio_em")
-  ]);
-  if(appointments.error||blocks.error){$("agendaContent").innerHTML='<div class="empty-state"><strong>Não foi possível carregar a agenda.</strong><span>Tente atualizar a página.</span></div>';return}
-  renderAgenda(appointments.data||[],blocks.data||[]);
-}
-
-function renderAgenda(appointments,blocks){
-  const items=[
-    ...appointments.map(a=>({kind:"appointment",at:new Date(a.inicio_em),data:a})),
-    ...blocks.map(b=>({kind:"block",at:new Date(b.inicio_em),data:b}))
-  ].sort((a,b)=>a.at-b.at);
-  const total=appointments.filter(a=>a.status!=="cancelado").reduce((sum,a)=>sum+Number(a.valor||0),0);
-  $("todayCount").textContent=appointments.filter(a=>a.status!=="cancelado").length;
-  $("todayValue").textContent=fmtMoney(total);
-  const next=appointments.find(a=>new Date(a.inicio_em)>new Date());
-  $("nextAppointment").textContent=next?`${new Intl.DateTimeFormat("pt-BR",{hour:"2-digit",minute:"2-digit"}).format(new Date(next.inicio_em))} · ${next.clientes?.nome?.split(" ")[0]||"Cliente"}`:"Livre";
-  if(!items.length){$("agendaContent").innerHTML='<div class="empty-state"><strong>Dia livre por enquanto</strong><span>Crie um agendamento ou bloqueie um horário.</span></div>';return}
-  $("agendaContent").innerHTML='<div class="appointment-list">'+items.map(item=>{
-    const time=new Intl.DateTimeFormat("pt-BR",{hour:"2-digit",minute:"2-digit"}).format(item.at);
-    if(item.kind==="block")return `<div class="time-row"><div class="time">${time}</div><div class="event-card blocked"><div class="event-title"><span>Horário bloqueado</span></div><p>${escapeHtml(item.data.motivo||"Indisponível")}</p></div></div>`;
-    const a=item.data,client=a.clientes?.nome||"Cliente",status=a.status.replace("_"," ");
-    return `<div class="time-row"><div class="time">${time}</div><div class="event-card"><div class="event-title"><span>${escapeHtml(client)}</span><span class="status ${a.status}">${escapeHtml(status)}</span></div><p>${escapeHtml(a.descricao_servico)} · ${fmtMoney(a.valor)}${a.endereco?`<br>${escapeHtml(a.endereco)}`:""}</p></div></div>`;
-  }).join("")+"</div>";
-}
-function escapeHtml(value){const d=document.createElement("div");d.textContent=value||"";return d.innerHTML}
-
-$("authForm").addEventListener("submit",async event=>{
-  event.preventDefault();showMessage("authMessage","");
-  const {error}=await db.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
-  if(error)showMessage("authMessage",error.message==="Invalid login credentials"?"E-mail ou senha incorretos.":error.message);
-});
-$("signUpBtn").addEventListener("click",async()=>{
-  showMessage("authMessage","");
-  const email=$("email").value.trim(),password=$("password").value;
-  if(!email||password.length<6){showMessage("authMessage","Informe e-mail e uma senha com ao menos 6 caracteres.");return}
-  const {data,error}=await db.auth.signUp({email,password});
-  if(error){showMessage("authMessage",error.message);return}
-  showMessage("authMessage",data.session?"Conta criada. Você já entrou no painel!":"Conta criada. Confira seu e-mail para confirmar o acesso.",true);
-});
-$("signOutBtn").addEventListener("click",()=>db.auth.signOut());
-$("previousDay").addEventListener("click",()=>{currentDate.setDate(currentDate.getDate()-1);loadAgenda()});
-$("nextDay").addEventListener("click",()=>{currentDate.setDate(currentDate.getDate()+1);loadAgenda()});
-$("todayBtn").addEventListener("click",()=>{currentDate=new Date();currentDate.setHours(0,0,0,0);loadAgenda()});
-$("newAppointmentBtn").addEventListener("click",()=>{$("appointmentDate").value=dateKey(currentDate);$("appointmentMessage").textContent="";$("appointmentDialog").showModal()});
-$("blockBtn").addEventListener("click",()=>{$("blockDate").value=dateKey(currentDate);$("blockMessage").textContent="";$("blockDialog").showModal()});
-document.addEventListener("click",event=>{const id=event.target.dataset.close;if(id)$(id).close()});
-
-$("appointmentForm").addEventListener("submit",async event=>{
-  event.preventDefault();showMessage("appointmentMessage","");
-  const name=$("clientName").value.trim(),phone=$("clientPhone").value.trim(),address=$("appointmentAddress").value.trim();
-  let {data:client,error:clientError}=await db.from("clientes").select("id").eq("telefone",phone).maybeSingle();
-  if(clientError){showMessage("appointmentMessage",clientError.message);return}
-  if(!client){const insert=await db.from("clientes").insert({nome:name,telefone:phone,endereco:address}).select("id").single();client=insert.data;clientError=insert.error}
-  if(clientError||!client){showMessage("appointmentMessage",clientError?.message||"Não foi possível salvar o cliente.");return}
-  const start=asLocal($("appointmentDate").value,$("appointmentTime").value);
-  const end=new Date(start.getTime()+Number($("duration").value)*60000);
-  const {error}=await db.from("agendamentos").insert({cliente_id:client.id,inicio_em:start.toISOString(),fim_em:end.toISOString(),endereco:address||null,descricao_servico:$("serviceDescription").value.trim(),valor:Number($("appointmentValue").value),observacoes:$("appointmentNotes").value.trim()||null});
-  if(error){showMessage("appointmentMessage",error.message);return}
-  $("appointmentDialog").close();$("appointmentForm").reset();toast("Agendamento criado com sucesso!");loadAgenda();
-});
-$("blockForm").addEventListener("submit",async event=>{
-  event.preventDefault();showMessage("blockMessage","");
-  const start=asLocal($("blockDate").value,$("blockStart").value),end=asLocal($("blockDate").value,$("blockEnd").value);
-  if(end<=start){showMessage("blockMessage","O horário final precisa ser depois do inicial.");return}
-  const {error}=await db.from("bloqueios_agenda").insert({inicio_em:start.toISOString(),fim_em:end.toISOString(),motivo:$("blockReason").value.trim()||null});
-  if(error){showMessage("blockMessage",error.message);return}
-  $("blockDialog").close();$("blockForm").reset();toast("Horário bloqueado.");loadAgenda();
-});
-db.auth.onAuthStateChange((_event,session)=>setView(session));
-db.auth.getSession().then(({data:{session}})=>setView(session));
+const db=window.supabase.createClient("https://qunaqtxadifmwbmycqum.supabase.co","sb_publishable_iMbIE9yLK6VGMLaEsYFbHA_S42mbd0W");
+let currentDate=new Date(),services=[],selectedItems=[],currentAppointment=null;currentDate.setHours(0,0,0,0);
+const $=id=>document.getElementById(id),pad=n=>String(n).padStart(2,"0"),dateKey=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,money=v=>new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(+v||0),esc=v=>{const e=document.createElement("i");e.textContent=v||"";return e.innerHTML},time=v=>new Intl.DateTimeFormat("pt-BR",{hour:"2-digit",minute:"2-digit"}).format(new Date(v)),dateTime=(d,t)=>new Date(`${d}T${t}:00`);
+function message(id,text,ok=false){const n=$(id);n.textContent=text;n.style.color=ok?"var(--success)":"var(--danger)"}function toast(t){$("toast").textContent=t;$("toast").classList.add("show");setTimeout(()=>$("toast").classList.remove("show"),2800)}
+function view(session){$("authView").classList.toggle("hidden",!!session);$("panelView").classList.toggle("hidden",!session);if(session){loadClients();loadServices();loadAgenda()}}
+async function loadClients(){const {data,error}=await db.from("clientes").select("id,nome,telefone,endereco").order("nome");if(error)return;const s=$("clientSelect"),old=s.value;s.innerHTML='<option value="">Selecione um cliente</option>'+data.map(x=>`<option value="${x.id}">${esc(x.nome)} · ${esc(x.telefone)}</option>`).join("");s.value=old}
+async function loadServices(){const {data,error}=await db.from("catalogo_precos").select("id,nome,valor,categoria,tipo").eq("ativo",true).in("tipo",["base","adicional"]).order("categoria").order("nome");if(error)return;services=data;$("servicePicker").innerHTML='<option value="">Selecione um serviço</option>'+data.map(x=>`<option value="${x.id}">${esc(x.nome)} — ${money(x.valor)}</option>`).join("")}
+async function loadAgenda(){const start=new Date(currentDate),end=new Date(currentDate);end.setDate(end.getDate()+1);$("selectedDate").textContent=new Intl.DateTimeFormat("pt-BR",{weekday:"long",day:"2-digit",month:"long"}).format(currentDate);const [{data:a,error},{data:b}]=await Promise.all([db.from("agendamentos").select("id,inicio_em,fim_em,descricao_servico,valor,status,endereco,clientes(nome,telefone),agendamento_itens(nome,valor_total)").gte("inicio_em",start.toISOString()).lt("inicio_em",end.toISOString()).order("inicio_em"),db.from("bloqueios_agenda").select("inicio_em,motivo").gte("inicio_em",start.toISOString()).lt("inicio_em",end.toISOString()).order("inicio_em")]);if(error){$("agendaContent").innerHTML='<div class="empty-state"><strong>Não foi possível carregar a agenda.</strong></div>';return}renderAgenda(a||[],b||[])}
+function renderAgenda(appointments,blocks){$("todayCount").textContent=appointments.filter(x=>x.status!=="cancelado").length;$("todayValue").textContent=money(appointments.filter(x=>x.status!=="cancelado").reduce((s,x)=>s+(+x.valor||0),0));const next=appointments.find(x=>new Date(x.inicio_em)>new Date());$("nextAppointment").textContent=next?`${time(next.inicio_em)} · ${next.clientes?.nome?.split(" ")[0]||"Cliente"}`:"Livre";const rows=[...appointments.map(x=>({type:"a",x,at:new Date(x.inicio_em)})),...blocks.map(x=>({type:"b",x,at:new Date(x.inicio_em)}))].sort((x,y)=>x.at-y.at);$("agendaContent").innerHTML=rows.length?'<div class="appointment-list">'+rows.map(r=>r.type==="b"?`<div class="time-row"><div class="time">${time(r.at)}</div><div class="event-card blocked"><b>Horário bloqueado</b><p>${esc(r.x.motivo||"Indisponível")}</p></div></div>`:`<button class="time-row appointment-row" data-id="${r.x.id}"><div class="time">${time(r.at)}</div><div class="event-card"><div class="event-title"><span>${esc(r.x.clientes?.nome||"Cliente")}</span><span class="status ${r.x.status}">${esc(r.x.status.replace("_"," "))}</span></div><p>${esc(r.x.descricao_servico)} · ${money(r.x.valor)}</p></div></button>`).join("")+"</div>":'<div class="empty-state"><strong>Dia livre por enquanto</strong><span>Crie um agendamento ou bloqueie um horário.</span></div>';document.querySelectorAll(".appointment-row").forEach(x=>x.onclick=()=>openDetails(x.dataset.id,appointments))}
+function renderItems(){const box=$("selectedServices");box.innerHTML=selectedItems.length?selectedItems.map((x,i)=>`<div class="service-chip"><span>${esc(x.nome)}</span><b>${money(x.valor)}</b><button data-item="${i}" type="button">×</button></div>`).join(""):'<p class="hint">Nenhum serviço selecionado.</p>';$("appointmentValue").value=selectedItems.reduce((s,x)=>s+(+x.valor||0),0).toFixed(2);box.querySelectorAll("button").forEach(x=>x.onclick=()=>{selectedItems.splice(+x.dataset.item,1);renderItems()})}
+function resetForm(){currentAppointment=null;$("appointmentForm").reset();$("appointmentId").value="";$("appointmentDate").value=dateKey(currentDate);$("duration").value=120;$("newClientFields").classList.add("hidden");$("newClientToggle").textContent="+ Novo cliente";selectedItems=[];renderItems();message("appointmentMessage","")}
+function toggleNewClient(force){const box=$("newClientFields"),show=force??box.classList.contains("hidden");box.classList.toggle("hidden",!show);$("newClientToggle").textContent=show?"Usar cliente existente":"+ Novo cliente";$("clientSelect").disabled=show}
+async function openDetails(id,cache){const ap=cache.find(x=>x.id===id);const {data,error}=await db.from("agendamentos").select("*,clientes(nome,telefone,endereco),agendamento_itens(*)").eq("id",id).single();if(error)return;currentAppointment=data;$("detailsTitle").textContent=data.clientes?.nome||"Atendimento";$("detailsContent").innerHTML=`<p><b>${time(data.inicio_em)}</b> · ${new Intl.DateTimeFormat("pt-BR",{day:"2-digit",month:"long"}).format(new Date(data.inicio_em))}</p><p>${esc(data.descricao_servico)}</p><ul>${data.agendamento_itens.map(x=>`<li>${esc(x.nome)} — ${money(x.valor_total)}</li>`).join("")}</ul><p><b>Total: ${money(data.valor)}</b></p><p>${esc(data.endereco||"Endereço não informado")}</p><p>${esc(data.observacoes||"")}</p>`;$("completeBtn").hidden=data.status==="concluido";$("cancelBtn").hidden=data.status==="cancelado";$("detailsDialog").showModal()}
+async function saveAppointment(e){e.preventDefault();message("appointmentMessage","");let clientId=$("clientSelect").value;if(!clientId){const nome=$("clientName").value.trim(),telefone=$("clientPhone").value.trim();if(!nome||!telefone){message("appointmentMessage","Selecione um cliente ou informe nome e WhatsApp.");return}const {data,error}=await db.from("clientes").insert({nome,telefone,endereco:$("appointmentAddress").value.trim()||null}).select("id").single();if(error){message("appointmentMessage",error.message);return}clientId=data.id}if(!selectedItems.length){message("appointmentMessage","Adicione ao menos um serviço.");return}const start=dateTime($("appointmentDate").value,$("appointmentTime").value),end=new Date(start.getTime()+(+$("duration").value)*60000),summary=selectedItems.map(x=>x.nome).join(" + ");const payload={cliente_id:clientId,inicio_em:start.toISOString(),fim_em:end.toISOString(),endereco:$("appointmentAddress").value.trim()||null,descricao_servico:summary,valor:+$("appointmentValue").value,observacoes:$("appointmentNotes").value.trim()||null};let appointmentId=$("appointmentId").value;if(appointmentId){const {error}=await db.from("agendamentos").update(payload).eq("id",appointmentId);if(error){message("appointmentMessage",error.message);return}const {error:del}=await db.from("agendamento_itens").delete().eq("agendamento_id",appointmentId);if(del){message("appointmentMessage",del.message);return}}else{const {data,error}=await db.from("agendamentos").insert(payload).select("id").single();if(error){message("appointmentMessage",error.message);return}appointmentId=data.id}const {error:itemError}=await db.from("agendamento_itens").insert(selectedItems.map(x=>({agendamento_id:appointmentId,catalogo_preco_id:x.id,nome:x.nome,valor_unitario:x.valor,valor_total:x.valor})));if(itemError){message("appointmentMessage",itemError.message);return}$("appointmentDialog").close();toast($("appointmentId").value?"Agendamento atualizado!":"Agendamento criado com sucesso!");loadAgenda();loadClients()}
+$("authForm").onsubmit=async e=>{e.preventDefault();const {error}=await db.auth.signInWithPassword({email:$("email").value,password:$("password").value});if(error)message("authMessage","E-mail ou senha incorretos.")};$("signUpBtn").onclick=async()=>{const {data,error}=await db.auth.signUp({email:$("email").value,password:$("password").value});message("authMessage",error?error.message:data.session?"Conta criada.":"Confira o e-mail para confirmar.",!error)};$("signOutBtn").onclick=()=>db.auth.signOut();$("previousDay").onclick=()=>{currentDate.setDate(currentDate.getDate()-1);loadAgenda()};$("nextDay").onclick=()=>{currentDate.setDate(currentDate.getDate()+1);loadAgenda()};$("todayBtn").onclick=()=>{currentDate=new Date();currentDate.setHours(0,0,0,0);loadAgenda()};$("newAppointmentBtn").onclick=()=>{resetForm();$("appointmentDialog").showModal()};$("newClientToggle").onclick=()=>toggleNewClient();$("addServiceBtn").onclick=()=>{const item=services.find(x=>x.id===$("servicePicker").value);if(item&&!selectedItems.some(x=>x.id===item.id)){selectedItems.push(item);renderItems()}$("servicePicker").value=""};$("appointmentForm").onsubmit=saveAppointment;$("editBtn").onclick=()=>{const a=currentAppointment;$("detailsDialog").close();resetForm();$("appointmentId").value=a.id;$("appointmentDate").value=dateKey(new Date(a.inicio_em));$("appointmentTime").value=new Date(a.inicio_em).toTimeString().slice(0,5);$("duration").value=Math.round((new Date(a.fim_em)-new Date(a.inicio_em))/60000);$("appointmentValue").value=a.valor;$("appointmentAddress").value=a.endereco||"";$("appointmentNotes").value=a.observacoes||"";$("clientSelect").value=a.cliente_id;selectedItems=a.agendamento_itens.map(x=>({id:x.catalogo_preco_id,nome:x.nome,valor:+x.valor_total}));renderItems();$("appointmentDialog").showModal()};$("completeBtn").onclick=async()=>{await db.from("agendamentos").update({status:"concluido"}).eq("id",currentAppointment.id);$("detailsDialog").close();toast("Marcado como concluído.");loadAgenda()};$("cancelBtn").onclick=async()=>{if(!confirm("Cancelar este agendamento?"))return;await db.from("agendamentos").update({status:"cancelado"}).eq("id",currentAppointment.id);$("detailsDialog").close();toast("Agendamento cancelado.");loadAgenda()};$("blockBtn").onclick=()=>{$("blockDate").value=dateKey(currentDate);$("blockDialog").showModal()};$("blockForm").onsubmit=async e=>{e.preventDefault();const s=dateTime($("blockDate").value,$("blockStart").value),f=dateTime($("blockDate").value,$("blockEnd").value);if(f<=s)return message("blockMessage","O fim precisa ser depois do início.");const {error}=await db.from("bloqueios_agenda").insert({inicio_em:s.toISOString(),fim_em:f.toISOString(),motivo:$("blockReason").value||null});if(error)return message("blockMessage",error.message);$("blockDialog").close();toast("Horário bloqueado.");loadAgenda()};document.addEventListener("click",e=>{if(e.target.dataset.close)$(e.target.dataset.close).close()});db.auth.onAuthStateChange((_,s)=>view(s));db.auth.getSession().then(({data:{session}})=>view(session));
