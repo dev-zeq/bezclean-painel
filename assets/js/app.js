@@ -1,5 +1,5 @@
 const SUPABASE_URL="https://qunaqtxadifmwbmycqum.supabase.co";
-const SUPABASE_KEY="sb_publishable_iMbIE9yLK6VGMLaEsYFbHA_S42mbd0K9";
+const SUPABASE_KEY="sb_publishable_iMbIE9yLK6VGMLaEsYFbHA_S42mbd0W";
 const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentDate=new Date();currentDate.setHours(0,0,0,0);
 
