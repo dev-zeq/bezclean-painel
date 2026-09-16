@@ -1,14 +1,19 @@
-const CACHE_NAME = "bezclean-painel-v2";
+// Ao publicar uma versão nova, altere somente esta constante e use o mesmo valor nos links dos HTML.
+const APP_VERSION = "20260916c";
+const CACHE_NAME = `bezclean-painel-${APP_VERSION}`;
+const asset = path => `${path}?v=${APP_VERSION}`;
 const APP_SHELL = [
   "/",
-  "/index.html",
-  "/clientes.html",
-  "/orcamentos.html",
-  "/mensagens.html",
-  "/manifest.webmanifest",
-  "/pwa.js",
-  "/assets/css/styles.css?v=20260916b",
-  "/assets/js/app.js?v=20260914f"
+  asset("/index.html"),
+  asset("/clientes.html"),
+  asset("/orcamentos.html"),
+  asset("/mensagens.html"),
+  asset("/manifest.webmanifest"),
+  asset("/pwa.js"),
+  asset("/assets/css/base.css"),
+  asset("/assets/css/styles.css"),
+  asset("/assets/js/dialogs.js"),
+  asset("/assets/js/app.js")
 ];
 
 self.addEventListener("install", event => {
@@ -26,11 +31,7 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
-
-  // Dados operacionais nunca são armazenados em cache: Supabase e WhatsApp seguem online.
   if (url.origin !== self.location.origin) return;
-
-  // Rede primeiro: HTML e CSS atualizam juntos, sem guardar respostas do Supabase.
   const shell = new Set(APP_SHELL.map(path => new URL(path, self.location.origin).pathname));
   event.respondWith(fetch(event.request).then(response => {
     if (response.ok && shell.has(url.pathname)) {
