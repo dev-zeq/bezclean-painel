@@ -1,0 +1,20 @@
+{
+  "name": "Bez Clean — Painel Operacional",
+  "short_name": "Bez Clean",
+  "description": "Agenda, orçamentos e clientes da Bez Clean.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f9fc",
+  "theme_color": "#0b3867",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "https://bezclean.com.br/imagens/LOGO.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
