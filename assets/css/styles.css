@@ -43,4 +43,7 @@ select{display:block;width:100%;margin-top:6px;padding:11px 12px;color:var(--ink
   .topbar-nav::-webkit-scrollbar{display:none}
   .topbar-nav .nav-link{flex:0 0 auto;padding:9px 12px;font-size:.87rem}
 }
-\n.item-notes{grid-column:1/-1}.item-notes input{width:100%}\n\nhtml,body{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}\n
+
+.item-notes{grid-column:1/-1}.item-notes input{width:100%}
+
+html,body{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
