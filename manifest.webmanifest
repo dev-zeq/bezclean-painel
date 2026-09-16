@@ -3,7 +3,7 @@
   "short_name": "Bez Clean",
   "description": "Agenda, orçamentos e clientes da Bez Clean.",
   "id": "/",
-  "start_url": "/?v=20260916d",
+  "start_url": "/?v=20260916e",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f5f9fc",
