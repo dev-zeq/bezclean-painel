@@ -43,21 +43,3 @@ select{display:block;width:100%;margin-top:6px;padding:11px 12px;color:var(--ink
   .topbar-nav::-webkit-scrollbar{display:none}
   .topbar-nav .nav-link{flex:0 0 auto;padding:9px 12px;font-size:.87rem}
 }
-
-/* Barra compacta de navegação por ícones no PWA. */
-.brand-home{text-decoration:none;color:inherit}
-.nav-icon,.icon-signout svg{display:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-@media(max-width:640px){
-  .topbar{display:flex;min-height:64px;height:64px;padding:0 12px;gap:8px}
-  .topbar .brand-home{flex:0 0 42px;gap:0}
-  .topbar .brand-home>div{display:none}
-  .topbar .brand-logo{width:40px;height:40px;border-radius:11px}
-  .topbar-nav{display:flex;flex:1;justify-content:space-evenly;align-items:center;gap:2px;min-width:0;margin:0;padding:0;overflow:visible}
-  .topbar-nav .nav-link{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;padding:0;border:0;border-radius:11px;background:transparent;color:var(--muted)}
-  .topbar-nav .nav-link.active{background:var(--brand-cyan-soft);color:var(--brand-blue)}
-  .topbar-nav .nav-icon{display:block;width:21px;height:21px}
-  .topbar-nav .nav-label{display:none}
-  .topbar>.icon-signout{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;padding:0;border-radius:10px;color:var(--muted)}
-  .topbar>.icon-signout svg{display:block;width:20px;height:20px}
-  .topbar>.icon-signout span{display:none}
-}
