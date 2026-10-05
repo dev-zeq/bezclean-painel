@@ -10,9 +10,9 @@ class Element{
 }
 const nodes=new Map();const html=fs.readFileSync(path.join(root,'campanhas.html'),'utf8');for(const m of html.matchAll(/id="([^"]+)"/g))nodes.set(m[1],new Element(m[1]));
 const storage=new Map(),events={};let context;
-const sandbox={console,Intl,Date,Map,Set,Promise,Number,String,URLSearchParams,crypto:require('node:crypto').webcrypto,structuredClone,setTimeout,clearTimeout,
+const sandbox={console,Intl,Date,Map,Set,Promise,Number,String,URL,URLSearchParams,crypto:require('node:crypto').webcrypto,structuredClone,setTimeout,clearTimeout,
  document:{getElementById:id=>nodes.get(id),addEventListener:(name,fn)=>events['doc:'+name]=fn,visibilityState:'visible'},
- navigator:{userAgent:'iPhone'},location:{href:'',search:''},sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
+ navigator:{userAgent:'Linux',clipboard:{writeText:async text=>{sandbox.copiedMessage=text;}}},location:{href:'',search:''},sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
  addEventListener:(name,fn)=>events[name]=fn};sandbox.window=sandbox;context=vm.createContext(sandbox);
 for(const file of ['assets/js/campanhas-core.js','assets/js/campanhas-modelos.js','tests/mock-supabase.js','assets/js/campanhas.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
 const node=id=>nodes.get(id),expr=s=>vm.runInContext(s,context);
@@ -23,7 +23,7 @@ async function submit(id){node(id).onsubmit({preventDefault(){}});await settle()
  await settle();assert.equal(node('error').textContent,'');assert.equal(node('dashboard').classList.contains('hidden'),false);
  await click('addClient');node('quickName').value='Outro nome';node('quickPhone').value='+55 (47) 99999-9999';await submit('addForm');
  assert.equal(sandbox.fixture.clientes.length,1);assert.equal(sandbox.fixture.clientes[0].nome,'Cliente antigo de teste');assert.equal(sandbox.fixture.campanha_clientes.length,1);assert.equal(node('contactDialog').open,true);console.log('PASS cadastro reutiliza telefone e mantém nome existente');
- await click('openWhatsApp');assert.ok(sandbox.fixtureWhatsAppUrl.startsWith('https://wa.me/5547999999999?text='));assert.equal(sandbox.fixture.campanha_clientes[0].primeiro_contato_em,undefined);assert.equal(sandbox.fixture.campanha_contatos[0].tipo,'abertura_whatsapp');console.log('PASS abrir WhatsApp não confirma envio');
+ await click('openWhatsApp');assert.ok(sandbox.fixtureWhatsAppUrl.startsWith('https://wa.me/5547999999999?text='));assert.equal(sandbox.fixture.campanha_clientes[0].primeiro_contato_em,undefined);assert.equal(sandbox.fixture.campanha_contatos[0].tipo,'abertura_whatsapp');assert.equal(new URL(sandbox.fixtureWhatsAppUrl).searchParams.get('text'),node('messageText').value);await click('copyMessage');assert.equal(sandbox.copiedMessage,node('messageText').value);assert.equal(sandbox.fixture.campanha_contatos.length,1);console.log('PASS abrir WhatsApp não confirma envio');
  await click('confirmSent');assert.ok(sandbox.fixture.campanha_clientes[0].primeiro_contato_em);assert.equal(sandbox.fixture.campanha_contatos.filter(c=>c.tipo==='envio_confirmado').length,1);
  await click('confirmSent');assert.equal(sandbox.fixture.campanha_contatos.filter(c=>c.tipo==='envio_confirmado').length,1);assert.ok(node('contactError').textContent.includes('Abra o WhatsApp'));console.log('PASS confirmação de envio e proteção de repetição');
  node('potentialValue').value='600,00';await submit('interestForm');assert.equal(sandbox.fixture.campanha_clientes[0].valor_potencial,600);assert.match(node('potential').textContent,/600/);console.log('PASS interesse atualiza potencial');
