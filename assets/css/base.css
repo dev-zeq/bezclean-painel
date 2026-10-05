@@ -72,7 +72,7 @@ dialog::backdrop{background:#102c4980}
 .grid,.form-grid{grid-template-columns:1fr}
 .full{grid-column:auto}
 .actions .primary,.actions .secondary,.modal-actions .primary,.modal-actions .secondary{flex:1}
-.mobile-tabs{position:fixed;z-index:20;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));height:calc(64px + env(safe-area-inset-bottom,0px));padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--border);box-shadow:0 -5px 20px #0b38670d}
+.mobile-tabs{position:fixed;z-index:20;left:0;right:0;bottom:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));height:calc(64px + env(safe-area-inset-bottom,0px));padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));background:#fff;border-top:1px solid var(--border);box-shadow:0 -5px 20px #0b38670d}
 .mobile-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0;border-radius:10px;color:var(--muted);text-align:center;text-decoration:none;font-size:10px;font-weight:700;line-height:1.1}
 .mobile-tab span{overflow:hidden;max-width:100%;white-space:nowrap;text-overflow:ellipsis}
 .mobile-tab.is-active{color:var(--navy);background:var(--brand-cyan-soft)}
@@ -81,3 +81,4 @@ dialog{position:fixed;inset:0;width:100%;max-width:none;height:100dvh;max-height
 dialog .modal,dialog .modal-card{width:100%;height:100%;min-height:0;max-height:100dvh;padding:calc(18px + env(safe-area-inset-top,0px)) 16px calc(24px + env(safe-area-inset-bottom,0px));overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
 .toast{left:12px;right:12px;bottom:calc(64px + 12px + env(safe-area-inset-bottom,0px));max-width:none;text-align:center}
 }
+
