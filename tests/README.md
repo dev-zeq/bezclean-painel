@@ -13,4 +13,6 @@ Antes da publicação:
 5. Validar visualmente em Safari/iPhone (320–390 px), teclado, fechar diálogos, retorno do WhatsApp e preservação da mensagem.
 6. Publicar a branch somente após banco e fluxo real aprovados. O service worker foi atualizado para 20261005a.
 
-Estado desta sessão: migração e consultas SQL foram rejeitadas pelo conector porque exigem aprovação e a política do ambiente é `never`. Testes de layout no navegador local também ficaram bloqueados. A produção não foi alterada.
+Atualização de 05/10/2026: o usuário executou a migração com sucesso no Supabase. O conector confirmou as três novas tabelas, RLS habilitado e todos os campos adicionais nas tabelas existentes. O advisor não apontou problemas nas tabelas da campanha.
+
+Consultas SQL continuam bloqueadas porque o ambiente exige aprovação e a política é `never`. O acesso ao painel pelo navegador também foi recusado. Os cenários autenticados e a inspeção visual de Safari/iPhone ainda não foram executados nesta sessão. O usuário autorizou publicar para teste no celular e computador com essas limitações informadas.

@@ -61,5 +61,5 @@ if (quoteDetailActions) {
 // Acesso a Campanhas também no computador.
 const campaignNav = document.querySelector(".top .nav, .topbar-nav");
 if (campaignNav && !campaignNav.querySelector("a[href*=campanhas]")) {
-  const link = document.createElement("a"); link.href = "/campanhas.html?v=" + APP_VERSION; link.textContent = "Campanhas"; campaignNav.appendChild(link);
+  const link = document.createElement("a"); link.href = "/campanhas.html?v=" + APP_VERSION; link.className = "secondary nav-link"; link.textContent = "Campanhas"; campaignNav.appendChild(link);
 }
