@@ -1,5 +1,5 @@
 // Ao publicar uma versão nova, altere somente esta constante e use o mesmo valor nos links dos HTML.
-const APP_VERSION = "20260926a";
+const APP_VERSION = "20261005a";
 const CACHE_NAME = `bezclean-painel-${APP_VERSION}`;
 const asset = path => `${path}?v=${APP_VERSION}`;
 const APP_SHELL = [
@@ -8,6 +8,10 @@ const APP_SHELL = [
   asset("/clientes.html"),
   asset("/orcamentos.html"),
   asset("/mensagens.html"),
+  asset("/campanhas.html"),
+  asset("/assets/css/campanhas.css"),
+  asset("/assets/js/campanhas-core.js"),
+  asset("/assets/js/campanhas.js"),
   asset("/manifest.webmanifest"),
   asset("/pwa.js"),
   asset("/assets/css/base.css"),
@@ -43,3 +47,4 @@ self.addEventListener("fetch", event => {
     event.request.mode === "navigate" ? caches.match("/") : Response.error()
   ))));
 });
+

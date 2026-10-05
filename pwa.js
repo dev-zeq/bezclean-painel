@@ -1,4 +1,4 @@
-const APP_VERSION = "20260926a";
+const APP_VERSION = "20261005a";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).then(registration => registration.update()).catch(() => {}));
@@ -55,4 +55,11 @@ if (quoteDetailActions) {
     pdfWindow.document.close();
     pdfWindow.onload = () => { pdfWindow.focus(); pdfWindow.print(); };
   };
+}
+
+
+// Acesso a Campanhas também no computador.
+const campaignNav = document.querySelector(".top .nav, .topbar-nav");
+if (campaignNav && !campaignNav.querySelector("a[href*=campanhas]")) {
+  const link = document.createElement("a"); link.href = "/campanhas.html?v=" + APP_VERSION; link.textContent = "Campanhas"; campaignNav.appendChild(link);
 }

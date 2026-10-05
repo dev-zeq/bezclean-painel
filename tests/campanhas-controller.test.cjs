@@ -1,0 +1,37 @@
+// Testes do controlador com DOM mínimo e fixture em memória, sem navegador ou Supabase.
+const vm=require('node:vm'),fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict');
+const root=path.join(__dirname,'..');
+class Element{
+ constructor(id=''){this.id=id;this.value='';this.textContent='';this._html='';this.disabled=false;this.checked=false;this.open=false;this.dataset={};this.classes=new Set();this.classList={add:c=>this.classes.add(c),remove:c=>this.classes.delete(c),contains:c=>this.classes.has(c),toggle:(c,force)=>{const on=force===undefined?!this.classes.has(c):force;if(on)this.classes.add(c);else this.classes.delete(c);}};}
+ set innerHTML(s){this._html=s;if(this.id.includes('Select')){const m=s.match(/<option value="([^"]*)"/);this.value=m?.[1]||'';}}
+ get innerHTML(){return this._html;}
+ querySelectorAll(selector){const attribute=selector.match(/^\[([^\]]+)\]$/)?.[1];if(!attribute)return[];const result=[];for(const m of this._html.matchAll(new RegExp(attribute+'="([^"]+)"','g'))){const e=new Element();e.dataset[attribute.replace('data-','').replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=m[1];result.push(e);}return result;}
+ showModal(){this.open=true;}close(){this.open=false;}reset(){this.value='';}focus(){}
+}
+const nodes=new Map();const html=fs.readFileSync(path.join(root,'campanhas.html'),'utf8');for(const m of html.matchAll(/id="([^"]+)"/g))nodes.set(m[1],new Element(m[1]));
+const storage=new Map(),events={};let context;
+const sandbox={console,Intl,Date,Map,Set,Promise,Number,String,URLSearchParams,crypto:require('node:crypto').webcrypto,structuredClone,setTimeout,clearTimeout,
+ document:{getElementById:id=>nodes.get(id),addEventListener:(name,fn)=>events['doc:'+name]=fn,visibilityState:'visible'},
+ navigator:{userAgent:'iPhone'},location:{href:'',search:''},sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
+ addEventListener:(name,fn)=>events[name]=fn};sandbox.window=sandbox;context=vm.createContext(sandbox);
+for(const file of ['assets/js/campanhas-core.js','tests/mock-supabase.js','assets/js/campanhas.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
+const node=id=>nodes.get(id),expr=s=>vm.runInContext(s,context);
+async function settle(){for(let i=0;i<100;i++){await new Promise(setImmediate);if(!expr('loading||busy'))return;}throw Error('Controller did not settle');}
+async function click(id){await node(id).onclick();await settle();}
+async function submit(id){node(id).onsubmit({preventDefault(){}});await settle();}
+(async()=>{
+ await settle();assert.equal(node('error').textContent,'');assert.equal(node('dashboard').classList.contains('hidden'),false);
+ await click('addClient');node('quickName').value='Outro nome';node('quickPhone').value='+55 (47) 99999-9999';await submit('addForm');
+ assert.equal(sandbox.fixture.clientes.length,1);assert.equal(sandbox.fixture.clientes[0].nome,'Cliente antigo de teste');assert.equal(sandbox.fixture.campanha_clientes.length,1);assert.equal(node('contactDialog').open,true);console.log('PASS cadastro reutiliza telefone e mantém nome existente');
+ await click('openWhatsApp');assert.ok(sandbox.fixtureWhatsAppUrl.startsWith('https://wa.me/5547999999999?text='));assert.equal(sandbox.fixture.campanha_clientes[0].primeiro_contato_em,undefined);assert.equal(sandbox.fixture.campanha_contatos[0].tipo,'abertura_whatsapp');console.log('PASS abrir WhatsApp não confirma envio');
+ await click('confirmSent');assert.ok(sandbox.fixture.campanha_clientes[0].primeiro_contato_em);assert.equal(sandbox.fixture.campanha_contatos.filter(c=>c.tipo==='envio_confirmado').length,1);
+ await click('confirmSent');assert.equal(sandbox.fixture.campanha_contatos.filter(c=>c.tipo==='envio_confirmado').length,1);assert.ok(node('contactError').textContent.includes('Abra o WhatsApp'));console.log('PASS confirmação de envio e proteção de repetição');
+ node('potentialValue').value='600,00';await submit('interestForm');assert.equal(sandbox.fixture.campanha_clientes[0].valor_potencial,600);assert.match(node('potential').textContent,/600/);console.log('PASS interesse atualiza potencial');
+ node('contactDialog').close();await click('addClient');node('quickName').value='Nome repetido';node('quickPhone').value='47999999999';await submit('addForm');assert.equal(sandbox.fixture.clientes.length,1);assert.equal(sandbox.fixture.campanha_clientes.length,1);console.log('PASS cliente não é repetido na campanha');
+ const participant=sandbox.fixture.campanha_clientes[0];sandbox.fixture.agendamentos.push({id:'a',cliente_id:participant.cliente_id,campanha_cliente_id:participant.id,valor:600,status:'confirmado',inicio_em:'2026-10-06T11:00:00Z'});await click('refresh');assert.match(node('potential').textContent,/0,00/);assert.match(node('scheduled').textContent,/600/);assert.match(node('remaining').textContent,/1.800/);
+ sandbox.fixture.agendamentos[0].status='concluido';await click('refresh');assert.match(node('realized').textContent,/600/);assert.match(node('scheduled').textContent,/600/);sandbox.fixture.agendamentos[0].valor=700;await click('refresh');assert.match(node('realized').textContent,/700/);console.log('PASS indicadores acompanham agendamento, conclusão e alteração de valor');
+ sandbox.fixtureFail=true;await click('replied');assert.match(node('contactError').textContent,/Sem conexão/);assert.match(node('realized').textContent,/700/);sandbox.fixtureFail=false;console.log('PASS falha não apresenta salvamento confirmado nem apaga indicadores');
+ const oldClients=sandbox.fixture.clientes.length;node('contactDialog').close();await click('addClient');node('quickName').value='Cliente novo de teste';node('quickPhone').value='(47) 98888-8888';await submit('addForm');assert.equal(sandbox.fixture.clientes.length,oldClients+1);assert.equal(sandbox.fixture.campanha_clientes.length,2);console.log('PASS novo cliente entra na base e na campanha');
+ const originalSent=sandbox.fixture.campanha_contatos.find(c=>c.tipo==='envio_confirmado').texto_utilizado;node('contactDialog').close();await click('models');node('editModelTitle').value='Modelo atualizado';node('editModelText').value='Olá, {nome}! Nova mensagem.';await submit('modelsForm');assert.equal(sandbox.fixture.modelos_mensagem[0].conteudo,'Olá, {nome}! Nova mensagem.');assert.equal(sandbox.fixture.campanha_contatos.find(c=>c.tipo==='envio_confirmado').texto_utilizado,originalSent);console.log('PASS editar modelo preserva texto já enviado');
+ console.log('PASS controller complete');
+})().catch(e=>{console.error(e);process.exitCode=1;});
