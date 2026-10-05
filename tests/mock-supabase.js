@@ -14,8 +14,9 @@ class FixtureQuery{
  eq(k,v){this.filters.push(r=>r[k]===v);return this;}
  in(k,v){this.filters.push(r=>v.includes(r[k]));return this;}
  single(){this.one=true;return this;}
+ insert(payload){this.insertRows=Array.isArray(payload)?payload:[payload];return this;}
  update(payload){this.payload=payload;return this;}
- then(resolve,reject){try{if(window.fixtureFail)throw Error('Failed to fetch');const matches=window.fixture[this.table].filter(r=>this.filters.every(f=>f(r)));if(this.payload)matches.forEach(r=>Object.assign(r,this.payload));const data=matches.slice(this.offset,this.end+1);return Promise.resolve({data:this.one?data[0]:structuredClone(data),error:null}).then(resolve,reject);}catch(error){return Promise.resolve({data:null,error}).then(resolve,reject);}}
+ then(resolve,reject){try{if(window.fixtureFail)throw Error('Failed to fetch');if(this.insertRows){this.inserted=this.insertRows.map(r=>({id:crypto.randomUUID(),...r}));window.fixture[this.table].push(...this.inserted);this.insertRows=null;}const matches=(this.inserted||window.fixture[this.table]).filter(r=>this.filters.every(f=>f(r)));if(this.payload)matches.forEach(r=>Object.assign(r,this.payload));const data=matches.slice(this.offset,this.end+1);return Promise.resolve({data:this.one?data[0]:structuredClone(data),error:null}).then(resolve,reject);}catch(error){return Promise.resolve({data:null,error}).then(resolve,reject);}}
 }
 window.open=(url)=>{window.fixtureWhatsAppUrl=url;return {};};
 window.supabase={createClient:()=>({

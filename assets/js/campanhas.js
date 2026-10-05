@@ -1,12 +1,18 @@
 'use strict';
 const db=window.supabase.createClient('https://qunaqtxadifmwbmycqum.supabase.co','sb_publishable_iMbIE9yLK6VGMLaEsYFbHA_S42mbd0W');
 const C=window.CampanhasCore,$=id=>document.getElementById(id),esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-let campaign=null,clients=[],appointments=[],quotes=[],participants=[],models=[],contacts=[],rows=[],currentId=null,filter='todos',busy=false,loading=false;
+let campaign=null,clients=[],appointments=[],quotes=[],participants=[],models=[],contacts=[],rows=[],currentId=null,filter='todos',busy=false,loading=false,modelsWarning='';
 const date=value=>new Date(value).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});
 function toast(text){$('toast').textContent=text;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),3000);}
 function errorText(error){const raw=String(error?.message||error||'');if(/fetch|network|offline/i.test(raw))return 'Sem conexão. Tente novamente; o registro não foi confirmado.';if(/schema cache|does not exist|could not find/i.test(raw))return 'Campanhas ainda não está disponível no banco. Atualize o painel após a publicação.';return raw||'Não foi possível salvar. Tente novamente.';}
 async function result(query){const {data,error}=await query;if(error)throw error;return data;}
 async function all(table,select='*',condition){let list=[];for(let offset=0;;offset+=500){let q=db.from(table).select(select).order('id').range(offset,offset+499);if(condition)q=condition(q);const data=await result(q);list.push(...(data||[]));if(!data||data.length<500)break;}return list;}
+function suggestedKey(model){return 'campanha_'+campaign.id+'_convite_'+model.key;}
+async function ensureSuggestedModels(){
+ const suggestions=window.CampanhasModelos||[],keys=new Set(models.map(m=>m.chave));const missing=suggestions.filter(m=>!keys.has(suggestedKey(m)));modelsWarning='';if(!missing.length)return;
+ try{const added=await result(db.from('modelos_mensagem').insert(missing.map(m=>({chave:suggestedKey(m),titulo:m.titulo,conteudo:m.conteudo,campanha_id:campaign.id}))).select('*'));models.push(...(added||[]));}
+ catch(error){if(error.code==='23505'){models=await all('modelos_mensagem','*',q=>q.eq('campanha_id',campaign.id));}else modelsWarning='Não foi possível adicionar as sugestões: '+errorText(error);}
+}
 async function load(){
  if(loading)return;loading=true;$('refresh').disabled=true;$('error').classList.add('hidden');
  try{
@@ -22,8 +28,9 @@ async function load(){
     all('modelos_mensagem','*',q=>q.eq('campanha_id',campaign.id))
   ]);
   [clients,appointments,quotes,participants,models]=data;
+  await ensureSuggestedModels();
   contacts=[];for(let i=0;i<participants.length;i+=100)contacts.push(...await all('campanha_contatos','*',q=>q.in('campanha_cliente_id',participants.slice(i,i+100).map(p=>p.id))));
-  models.sort((a,b)=>a.titulo.localeCompare(b.titulo,'pt-BR'));
+  const suggestedOrder=new Map((window.CampanhasModelos||[]).map((m,i)=>[suggestedKey(m),i]));models.sort((a,b)=>(suggestedOrder.get(a.chave)??99)-(suggestedOrder.get(b.chave)??99)||a.titulo.localeCompare(b.titulo,'pt-BR'));
   rows=C.rows(participants,clients,appointments,quotes).sort((a,b)=>{
     const rank=x=>x.status==='nao_contatado'?0:x.status==='interessado'?1:2;
     return rank(a)-rank(b)||(a.last?new Date(a.last.inicio_em).getTime():0)-(b.last?new Date(b.last.inicio_em).getTime():0)||(a.client?.nome||'').localeCompare(b.client?.nome||'','pt-BR');
@@ -60,8 +67,8 @@ function persistDraft(opened=false){const previous=pendingDraft();const text=$('
  const d=previous&&previous.text===text&&previous.model===model?previous:{text,model,eventId:crypto.randomUUID(),opened:false};d.opened=d.opened||opened;sessionStorage.setItem(draftKey(),JSON.stringify(d));return d;}
 function suggestModel(){const usage=new Map(models.map(m=>[m.id,0]));for(const c of contacts)if(c.tipo==='envio_confirmado'&&usage.has(c.modelo_mensagem_id))usage.set(c.modelo_mensagem_id,usage.get(c.modelo_mensagem_id)+1);return [...models].sort((a,b)=>usage.get(a.id)-usage.get(b.id))[0];}
 function setMessage(){const m=models.find(m=>m.id===$('modelSelect').value);$('messageText').value=C.message(m?.conteudo,current()?.client?.nome);persistDraft();}
-function refreshContactDetails(){const r=current();if(!r)return;$('contactName').textContent=r.client?.nome||'Cliente';$('contactInfo').textContent=(r.client?.telefone||'')+' · '+C.labels[r.status]+(r.primeiro_contato_em?' · Mensagem enviada em '+date(r.primeiro_contato_em):'');$('createQuote').href='orcamentos.html?v=20261005a&campanha_cliente='+encodeURIComponent(r.id);$('potentialValue').value=r.valor_potencial==null?'':Number(r.valor_potencial).toLocaleString('pt-BR',{minimumFractionDigits:2});
- $('linkedQuotes').innerHTML=r.linkedQuotes.map(q=>'<a class="secondary" href="orcamentos.html?v=20261005a&orcamento='+encodeURIComponent(q.id)+'">Orçamento · '+C.money(q.valor_total)+' · '+esc(q.status)+'</a>').join('');
+function refreshContactDetails(){const r=current();if(!r)return;$('contactName').textContent=r.client?.nome||'Cliente';$('contactInfo').textContent=(r.client?.telefone||'')+' · '+C.labels[r.status]+(r.primeiro_contato_em?' · Mensagem enviada em '+date(r.primeiro_contato_em):'');$('createQuote').href='orcamentos.html?v=20261005b&campanha_cliente='+encodeURIComponent(r.id);$('potentialValue').value=r.valor_potencial==null?'':Number(r.valor_potencial).toLocaleString('pt-BR',{minimumFractionDigits:2});
+ $('linkedQuotes').innerHTML=r.linkedQuotes.map(q=>'<a class="secondary" href="orcamentos.html?v=20261005b&orcamento='+encodeURIComponent(q.id)+'">Orçamento · '+C.money(q.valor_total)+' · '+esc(q.status)+'</a>').join('');
  const history=contacts.filter(c=>c.campanha_cliente_id===r.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));const names={abertura_whatsapp:'WhatsApp aberto (envio não confirmado)',envio_confirmado:'Envio confirmado',resposta:'Resposta registrada',interesse:'Interesse registrado',nao_interessado:'Não interessado'};
  $('contactHistory').innerHTML='<ul>'+history.map(h=>'<li>'+date(h.created_at)+' · '+names[h.tipo]+(h.texto_utilizado?'<details><summary>Texto utilizado</summary><p>'+esc(h.texto_utilizado).replaceAll('\n','<br>')+'</p></details>':'')+'</li>').join('')+'</ul>'+(r.last?'<p>Último serviço: '+date(r.last.inicio_em)+' · '+esc(r.last.descricao_servico)+' · '+C.money(r.last.valor)+'</p>':'<p>Sem serviço anterior registrado no painel.</p>');
 }
@@ -86,9 +93,11 @@ $('confirmSent').onclick=()=>action($('confirmSent'),'contactError',async()=>{co
 $('nextClient').onclick=()=>{if(busy)return;const currentIndex=rows.findIndex(r=>r.id===currentId);const next=[...rows.slice(currentIndex+1),...rows.slice(0,currentIndex)].find(r=>r.status==='nao_contatado'&&r.id!==currentId);$('contactDialog').close();if(next)openContact(next.id);else toast('Não há outro cliente sem contato.');};
 $('replied').onclick=()=>action($('replied'),'contactError',()=>record('resposta'));$('notInterested').onclick=()=>action($('notInterested'),'contactError',()=>record('nao_interessado'));
 $('interestForm').onsubmit=e=>{e.preventDefault();action($('saveInterest'),'contactError',async()=>{const value=C.parseMoney($('potentialValue').value);if(Number.isNaN(value))throw Error('Informe um valor válido, como 600,00.');await record('interesse',{value});toast('Interesse registrado.');});};
-function editModel(){const m=models.find(m=>m.id===$('editModelSelect').value);$('editModelTitle').value=m?.titulo||'';$('editModelText').value=m?.conteudo||'';}
-$('models').onclick=()=>{$('modelsError').textContent='';$('editModelSelect').innerHTML=models.map(m=>'<option value="'+m.id+'">'+esc(m.titulo)+'</option>').join('');editModel();$('modelsDialog').showModal();};$('editModelSelect').onchange=editModel;
-$('modelsForm').onsubmit=e=>{e.preventDefault();action($('saveModel'),'modelsError',async()=>{const title=$('editModelTitle').value.trim(),text=$('editModelText').value.trim();if(!title||!text)throw Error('Preencha título e mensagem.');const updated=await result(db.from('modelos_mensagem').update({titulo:title,conteudo:text,updated_at:new Date().toISOString()}).eq('id',$('editModelSelect').value).eq('campanha_id',campaign.id).select('id'));if(!updated?.length)throw Error('Modelo não encontrado ou sem permissão.');await load();$('modelsDialog').close();toast('Modelo atualizado.');});};
+function editModel(){const m=models.find(m=>m.id===$('editModelSelect').value);$('editModelTitle').value=m?.titulo||'';$('editModelText').value=m?.conteudo||'';$('saveModel').textContent=m?'Salvar modelo':'Criar modelo';}
+function renderModelEditor(selectedId){$('editModelSelect').innerHTML=models.map(m=>'<option value="'+m.id+'">'+esc(m.titulo)+'</option>').join('')+'<option value="">+ Novo modelo</option>';if(selectedId!==undefined)$('editModelSelect').value=selectedId;editModel();}
+$('models').onclick=()=>{$('modelsError').textContent=modelsWarning;renderModelEditor();$('modelsDialog').showModal();};$('editModelSelect').onchange=editModel;
+$('newModel').onclick=()=>{renderModelEditor('');$('editModelTitle').focus();};
+$('modelsForm').onsubmit=e=>{e.preventDefault();action($('saveModel'),'modelsError',async()=>{const title=$('editModelTitle').value.trim(),text=$('editModelText').value.trim(),id=$('editModelSelect').value;if(!title||!text)throw Error('Preencha título e mensagem.');const payload={titulo:title,conteudo:text,updated_at:new Date().toISOString()};const saved=id?await result(db.from('modelos_mensagem').update(payload).eq('id',id).eq('campanha_id',campaign.id).select('id')):await result(db.from('modelos_mensagem').insert({...payload,chave:'campanha_'+campaign.id+'_custom_'+crypto.randomUUID(),campanha_id:campaign.id}).select('id'));if(!saved?.length)throw Error('Modelo não encontrado ou sem permissão.');await load();$('modelsDialog').close();toast(id?'Modelo atualizado.':'Novo modelo criado.');});};
 $('linkRecord').onclick=()=>{const r=current();const available=[...quotes.filter(q=>q.cliente_id===r.cliente_id&&(!q.campanha_cliente_id||q.campanha_cliente_id===r.id)).map(q=>({value:'orcamento:'+q.id,text:'Orçamento · '+C.money(q.valor_total)+' · '+q.status})),...appointments.filter(a=>a.cliente_id===r.cliente_id&&a.status!=='cancelado'&&(!a.campanha_cliente_id||a.campanha_cliente_id===r.id)).map(a=>({value:'agendamento:'+a.id,text:'Atendimento '+date(a.inicio_em)+' · '+C.money(a.valor)+' · '+a.status}))];$('recordSelect').innerHTML='<option value="">Selecione</option>'+available.map(a=>'<option value="'+a.value+'">'+esc(a.text)+'</option>').join('');$('linkError').textContent=available.length?'':'Este cliente ainda não tem orçamento ou agendamento. Use Montar orçamento.';$('linkDialog').showModal();};
 $('linkForm').onsubmit=e=>{e.preventDefault();action($('saveLink'),'linkError',async()=>{const [type,id]=$('recordSelect').value.split(':');if(!id)throw Error('Selecione um registro.');await result(db.rpc('campanha_vincular_registro',{p_participante_id:currentId,p_tipo:type,p_registro_id:id}));await load();refreshContactDetails();$('linkDialog').close();toast('Registro vinculado.');});};
 document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)$(b.dataset.close).close();});

@@ -1,5 +1,5 @@
 // Ao publicar uma versão nova, altere somente esta constante e use o mesmo valor nos links dos HTML.
-const APP_VERSION = "20261005a";
+const APP_VERSION = "20261005b";
 const CACHE_NAME = `bezclean-painel-${APP_VERSION}`;
 const asset = path => `${path}?v=${APP_VERSION}`;
 const APP_SHELL = [
@@ -12,6 +12,7 @@ const APP_SHELL = [
   asset("/assets/css/campanhas.css"),
   asset("/assets/js/campanhas-core.js"),
   asset("/assets/js/campanhas.js"),
+  asset("/assets/js/campanhas-modelos.js"),
   asset("/manifest.webmanifest"),
   asset("/pwa.js"),
   asset("/assets/css/base.css"),
