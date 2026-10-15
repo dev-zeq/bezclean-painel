@@ -39,8 +39,8 @@
       return '<article class="price-row' + inactive + '" data-id="' + service.id + '">' +
         '<label>Serviço<input data-field="nome" maxlength="160" value="' + escape(service.nome) + '"></label>' +
         '<label>Normal<input data-field="valor_normal" inputmode="decimal" value="' + escape(core.formatMoney(service.valor_normal)) + '"></label>' +
-        '<label>Desconto<input data-field="valor_desconto" inputmode="decimal" value="' + escape(core.formatMoney(service.valor_desconto)) + '"></label>' +
-        '<label>Especial<input data-field="valor_especial" inputmode="decimal" value="' + escape(core.formatMoney(service.valor_especial)) + '"></label>' +
+        '<label>Desconto <small>(opcional)</small><input data-field="valor_desconto" inputmode="decimal" placeholder="Não configurado" value="' + escape(core.formatOptionalMoney(service.valor_desconto)) + '"></label>' +
+        '<label>Especial <small>(opcional)</small><input data-field="valor_especial" inputmode="decimal" placeholder="Não configurado" value="' + escape(core.formatOptionalMoney(service.valor_especial)) + '"></label>' +
         '<div class="price-row-actions"><button type="button" class="toggle' + actionClass + '" data-toggle="' + service.id + '">' + actionText + '</button><button type="button" class="save" data-save="' + service.id + '">Salvar</button></div>' +
         warning + '<p class="price-row-message" aria-live="polite"></p></article>';
     }).join("");
@@ -71,7 +71,7 @@
     const copy = Object.assign({}, existing);
     row.querySelectorAll("[data-field]").forEach(input => {
       const field = input.dataset.field;
-      copy[field] = field === "nome" ? input.value : core.parseMoney(input.value);
+      copy[field] = field === "nome" ? input.value : (field === "valor_normal" ? core.parseMoney(input.value) : core.parseOptionalMoney(input.value));
     });
     return copy;
   }
@@ -103,7 +103,6 @@
         return;
       }
       Object.assign(existing, result.data);
-      setStatus(next ? "Serviço ativado com sucesso." : "Serviço desativado com sucesso. Orçamentos antigos permanecem iguais.");
       render();
       const updated = document.querySelector('.price-row[data-id="' + id + '"]');
       if (updated) rowMessage(updated, validation.warnings.length ? "Salvo. " + validation.warnings[0] : "Alterações salvas.", "success");
@@ -121,6 +120,7 @@
         return;
       }
       Object.assign(existing, result.data);
+      setStatus(next ? "Serviço ativado com sucesso." : "Serviço desativado com sucesso. Orçamentos antigos permanecem iguais.");
       render();
       const updated = document.querySelector('.price-row[data-id="' + id + '"]');
       if (updated) rowMessage(updated, next ? "Serviço ativado." : "Serviço desativado. Orçamentos antigos permanecem iguais.", "success");
