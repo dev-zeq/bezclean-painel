@@ -96,8 +96,10 @@ teste antes de qualquer aplicação.
      );
    ```
 
-   Esperado: quatro contagens zero na primeira consulta; itens históricos continuam com
-   `modalidade_preco IS NULL`; e as constraints aparecem validadas.
+   Esperado: `normal_nulo` e `legado_divergente` iguais a zero. `desconto_nulo`
+   e `especial_nulo` podem ser maiores que zero, pois significam preço ainda não
+   configurado. Itens históricos continuam com `modalidade_preco IS NULL`; e as
+   constraints aparecem validadas.
 
 ## 3. Teste do trigger bidirecional
 
@@ -112,11 +114,11 @@ de transação e encerre com `ROLLBACK`, para não alterar o catálogo de teste.
    `valor_normal` para números diferentes na mesma instrução. O resultado esperado é
    erro `P0001`. Em seguida execute `ROLLBACK TO SAVEPOINT`.
 4. **Inserção legada:** crie um serviço de teste informando somente `valor` e os demais
-   campos obrigatórios do esquema real. O trigger deve preencher `valor_normal`,
-   `valor_desconto` e `valor_especial` com o mesmo valor.
+   campos obrigatórios do esquema real. O trigger deve preencher `valor_normal`.
+   `valor_desconto` e `valor_especial` devem permanecer `NULL`.
 5. **Inserção nova:** crie um serviço de teste com somente `valor_normal` e os demais
    campos obrigatórios. O trigger deve preencher `valor`; desconto e especial devem
-   receber o normal.
+   permanecer `NULL` até configuração explícita.
 6. Confirme que desconto igual ou acima do normal permanece permitido no banco. A
    interface deve avisar e a Etapa 04 não pode exibir economia para esse caso.
 
@@ -143,8 +145,13 @@ de transação e encerre com `ROLLBACK`, para não alterar o catálogo de teste.
 1. Só avance quando a Etapa 04 carregar `valor_normal`, `valor_desconto` e
    `valor_especial`, salvar `modalidade_preco` e persistir o preço unitário já usado
    no orçamento.
-2. Teste Normal, Desconto e Especial, inclusive alteração manual do unitário.
-3. Em Desconto, risque o normal somente quando `valor_normal > valor_unitario`.
+2. Normal deve estar disponível sempre. Desconto e Especial só podem ser oferecidos quando
+   o preço correspondente estiver configurado (não nulo); a interface não deve sugerir
+   modalidade sem preço.
+3. Teste Normal, Desconto e Especial disponíveis, inclusive alteração manual do unitário
+   sem mudar a modalidade.
+4. Em Desconto, risque o normal somente quando `valor_normal > valor_unitario`.
+   Não aplique desconto automático por quantidade.
 4. Teste PDF de `pwa.js`, WhatsApp, parcelamento, conversão para Agenda, edição e
    reabertura de orçamento.
 5. Teste a Tabela de Preços em celular e desktop, inclusive erro de RLS e rede.
