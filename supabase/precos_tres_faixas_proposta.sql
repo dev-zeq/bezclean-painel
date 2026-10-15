@@ -79,23 +79,17 @@ ALTER TABLE public.catalogo_precos
   ADD COLUMN IF NOT EXISTS valor_desconto numeric(12,2),
   ADD COLUMN IF NOT EXISTS valor_especial numeric(12,2);
 
--- Backfill conservador: o valor legado é a referência normal e, na ausência
--- de valores específicos, também a referência de desconto e especial.
+-- Backfill conservador: o valor legado é a referência normal obrigatória.
+-- Desconto e especial permanecem NULL até serem configurados na Tabela de Preços.
 -- Não toca em orcamentos nem em orcamento_itens.
 UPDATE public.catalogo_precos
 SET valor_normal = valor
 WHERE valor_normal IS NULL;
 
-UPDATE public.catalogo_precos
-SET valor_desconto = valor_normal
-WHERE valor_desconto IS NULL;
 
-UPDATE public.catalogo_precos
-SET valor_especial = valor_normal
-WHERE valor_especial IS NULL;
-
--- Proteções de domínio. O banco permite desconto >= normal: a interface avisa
--- e não calcula economia fictícia; a regra comercial não deve apagar preços.
+-- Proteções de domínio. Apenas valor_normal é obrigatório. As CHECK constraints
+-- aceitam NULL para desconto/especial; o banco permite desconto >= normal e a
+-- interface avisa sem calcular economia fictícia.
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -131,9 +125,7 @@ END
 $$;
 
 ALTER TABLE public.catalogo_precos
-  ALTER COLUMN valor_normal SET NOT NULL,
-  ALTER COLUMN valor_desconto SET NOT NULL,
-  ALTER COLUMN valor_especial SET NOT NULL;
+  ALTER COLUMN valor_normal SET NOT NULL;
 
 ALTER TABLE public.catalogo_precos
   VALIDATE CONSTRAINT catalogo_precos_valor_normal_nao_negativo,
@@ -184,8 +176,7 @@ BEGIN
         MESSAGE = 'Conflito entre valor e valor_normal em catalogo_precos';
     END IF;
 
-    NEW.valor_desconto := COALESCE(NEW.valor_desconto, NEW.valor_normal);
-    NEW.valor_especial := COALESCE(NEW.valor_especial, NEW.valor_normal);
+    -- Desconto e especial são opcionais e permanecem NULL quando não configurados.
     RETURN NEW;
   END IF;
 
@@ -216,9 +207,9 @@ EXECUTE FUNCTION public.catalogo_precos_espelhar_valor_normal();
 COMMENT ON COLUMN public.catalogo_precos.valor_normal IS
   'Preço de referência normal; sincronizado com o campo legado valor.';
 COMMENT ON COLUMN public.catalogo_precos.valor_desconto IS
-  'Preço de referência para a modalidade desconto.';
+  'Preço de referência opcional para a modalidade desconto; NULL significa não configurado.';
 COMMENT ON COLUMN public.catalogo_precos.valor_especial IS
-  'Preço de referência para a modalidade especial.';
+  'Preço de referência opcional para a modalidade especial; NULL significa não configurado.';
 COMMENT ON COLUMN public.orcamento_itens.modalidade_preco IS
   'normal, desconto ou especial; NULL preserva itens históricos anteriores à migração.';
 
