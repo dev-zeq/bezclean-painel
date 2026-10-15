@@ -22,12 +22,20 @@
     return /^\d+(?:\.\d{0,2})?$/.test(normalized) ? Number(normalized) : NaN;
   }
 
+  function parseOptionalMoney(value) {
+    return value == null || String(value).trim() === "" ? null : parseMoney(value);
+  }
+
   function formatMoney(value) {
     return new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0);
   }
 
+  function formatOptionalMoney(value) {
+    return value == null ? "" : formatMoney(value);
+  }
+
   function isRealDiscount(normal, discount) {
-    return Number.isFinite(+normal) && Number.isFinite(+discount) && +normal > +discount;
+    return normal != null && discount != null && Number.isFinite(+normal) && Number.isFinite(+discount) && +normal > +discount;
   }
 
   function validateService(service) {
@@ -35,11 +43,16 @@
     const name = String(service.nome || "").trim();
     if (!name) errors.nome = "Informe o nome do serviço.";
     if (name.length > 160) errors.nome = "Use no máximo 160 caracteres.";
-    ["valor_normal", "valor_desconto", "valor_especial"].forEach(field => {
-      if (!Number.isFinite(+service[field]) || +service[field] < 0) errors[field] = "Informe um valor igual ou maior que zero.";
+    if (!Number.isFinite(+service.valor_normal) || +service.valor_normal < 0) {
+      errors.valor_normal = "Informe o valor normal, igual ou maior que zero.";
+    }
+    ["valor_desconto", "valor_especial"].forEach(field => {
+      if (service[field] != null && (!Number.isFinite(+service[field]) || +service[field] < 0)) {
+        errors[field] = "Informe um valor igual ou maior que zero, ou deixe vazio.";
+      }
     });
     const warnings = [];
-    if (!errors.valor_normal && !errors.valor_desconto && +service.valor_desconto >= +service.valor_normal) {
+    if (!errors.valor_normal && !errors.valor_desconto && service.valor_desconto != null && +service.valor_desconto >= +service.valor_normal) {
       warnings.push("O valor de desconto é igual ou maior que o normal. Nenhuma economia será exibida nos orçamentos.");
     }
     return { errors, warnings };
@@ -49,11 +62,11 @@
     return {
       nome: String(service.nome || "").trim(),
       valor_normal: Number(service.valor_normal),
-      valor_desconto: Number(service.valor_desconto),
-      valor_especial: Number(service.valor_especial),
+      valor_desconto: service.valor_desconto == null ? null : Number(service.valor_desconto),
+      valor_especial: service.valor_especial == null ? null : Number(service.valor_especial),
       ativo: Boolean(service.ativo)
     };
   }
 
-  return { parseMoney, formatMoney, isRealDiscount, validateService, updatePayload };
+  return { parseMoney, parseOptionalMoney, formatMoney, formatOptionalMoney, isRealDiscount, validateService, updatePayload };
 });
