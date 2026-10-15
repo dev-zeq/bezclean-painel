@@ -90,8 +90,10 @@ teste antes de qualquer aplicação.
    select conname, convalidated
    from pg_constraint
    where conrelid in ('public.catalogo_precos'::regclass, 'public.orcamento_itens'::regclass)
-     and conname like 'catalogo_precos_valor_%'
-      or conname = 'orcamento_itens_modalidade_preco_valida';
+     and (
+       conname like 'catalogo_precos_valor_%'
+       or conname = 'orcamento_itens_modalidade_preco_valida'
+     );
    ```
 
    Esperado: quatro contagens zero na primeira consulta; itens históricos continuam com
