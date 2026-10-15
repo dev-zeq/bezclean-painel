@@ -67,7 +67,7 @@ if (campaignNav && !campaignNav.querySelector("a[href*=campanhas]")) {
 
 // Navegação das configurações e atalho direto para a Tabela de Preços.
 const settingsNavigation = document.querySelector(".top .nav, .topbar-nav");
-if (settingsNavigation && !settingsNavigation.querySelector("a[href*=configuracoes]")) {
+if (settingsNavigation && !/\\/configuracoes\\.html$/.test(location.pathname) && !settingsNavigation.querySelector("a[href*=configuracoes]")) {
   const link = document.createElement("a");
   link.href = "/configuracoes.html?v=" + APP_VERSION;
   link.className = settingsNavigation.classList.contains("topbar-nav") ? "secondary nav-link" : "back";
