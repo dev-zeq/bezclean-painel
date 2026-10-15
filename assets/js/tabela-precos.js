@@ -103,6 +103,7 @@
         return;
       }
       Object.assign(existing, result.data);
+      setStatus(next ? "Serviço ativado com sucesso." : "Serviço desativado com sucesso. Orçamentos antigos permanecem iguais.");
       render();
       const updated = document.querySelector('.price-row[data-id="' + id + '"]');
       if (updated) rowMessage(updated, validation.warnings.length ? "Salvo. " + validation.warnings[0] : "Alterações salvas.", "success");
