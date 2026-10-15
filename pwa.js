@@ -5,7 +5,7 @@ if ("serviceWorker" in navigator) {
 }
 
 const quoteMoney = value => new Intl.NumberFormat("pt-BR", {style:"currency",currency:"BRL"}).format(+value || 0);
-const hasPromotion = item => { const hasLowerOriginal = Number.isFinite(+item.valor_original) && +item.valor_original > +item.valor_unitario; return item.modalidade_preco === "desconto" ? hasLowerOriginal : item.modalidade_preco == null && hasLowerOriginal; };
+const hasPromotion = item => { const hasLowerOriginal = Number.isFinite(+item.valor_original) && +item.valor_original > +item.valor_unitario; return item.modalidade_preco === "desconto" && hasLowerOriginal; };
 const quoteInstallment = quote => (+quote.valor_total || 0) * 1.14 / 3;
 
 const quoteWhatsAppButton = document.getElementById("sendWhatsApp");
