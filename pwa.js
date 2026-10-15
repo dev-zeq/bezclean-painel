@@ -1,4 +1,4 @@
-const APP_VERSION = "20261005d";
+const APP_VERSION = "20261015a";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).then(registration => registration.update()).catch(() => {}));
@@ -62,4 +62,26 @@ if (quoteDetailActions) {
 const campaignNav = document.querySelector(".top .nav, .topbar-nav");
 if (campaignNav && !campaignNav.querySelector("a[href*=campanhas]")) {
   const link = document.createElement("a"); link.href = "/campanhas.html?v=" + APP_VERSION; link.className = "secondary nav-link"; link.textContent = "Campanhas"; campaignNav.appendChild(link);
+}
+
+
+// Navegação das configurações e atalho direto para a Tabela de Preços.
+const settingsNavigation = document.querySelector(".top .nav, .topbar-nav");
+if (settingsNavigation && !settingsNavigation.querySelector("a[href*=configuracoes]")) {
+  const link = document.createElement("a");
+  link.href = "/configuracoes.html?v=" + APP_VERSION;
+  link.className = settingsNavigation.classList.contains("topbar-nav") ? "secondary nav-link" : "back";
+  link.textContent = "Configurações";
+  settingsNavigation.appendChild(link);
+}
+if (/\/orcamentos\.html$/.test(location.pathname) && !document.getElementById("priceTableShortcut")) {
+  const newQuoteButton = document.getElementById("newQuote");
+  if (newQuoteButton) {
+    const shortcut = document.createElement("a");
+    shortcut.id = "priceTableShortcut";
+    shortcut.href = "/tabela-precos.html?v=" + APP_VERSION;
+    shortcut.className = "secondary";
+    shortcut.textContent = "Tabela de preços";
+    newQuoteButton.insertAdjacentElement("beforebegin", shortcut);
+  }
 }
