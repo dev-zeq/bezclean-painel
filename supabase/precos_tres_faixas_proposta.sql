@@ -62,8 +62,16 @@ BEGIN
   ), false) THEN
     RAISE EXCEPTION 'RLS deve permanecer habilitado em public.catalogo_precos';
   END IF;
+
+  IF NOT COALESCE((
+    SELECT relrowsecurity
+    FROM pg_class
+    WHERE oid = 'public.orcamento_itens'::regclass
+  ), false) THEN
+    RAISE EXCEPTION 'RLS deve permanecer habilitado em public.orcamento_itens';
+  END IF;
 END
-$$;
+$;
 
 -- Estrutura aditiva: nenhum serviço é inserido, alterado ou removido aqui.
 ALTER TABLE public.catalogo_precos
