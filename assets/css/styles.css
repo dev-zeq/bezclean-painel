@@ -155,3 +155,5 @@
 .summary-grid span{font-size:.67rem;line-height:1.22}
 .summary-grid strong{overflow:visible;margin-top:5px;font-size:.98rem;line-height:1.18;white-space:normal;word-break:break-word}
 }
+.chip-qty{display:flex;align-items:center;gap:4px;color:var(--muted);font-size:.72rem}
+.chip-qty input{width:56px;padding:6px;margin:0}
