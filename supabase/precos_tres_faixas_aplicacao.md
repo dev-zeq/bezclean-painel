@@ -65,3 +65,24 @@ Responda "autorizo" para: (1) criar o snapshot `backup_20261022`; (2) aplicar a 
 - Validação: contagens e hashes das colunas originais idênticos ao pré-migração; `valor_normal = valor` nos 28; nenhum desconto/especial/modalidade preenchido; RLS e políticas intactas; trigger e 4 constraints validadas.
 - Advisor: aviso novo `function_search_path_mutable` na função do trigger. Correção (pendente, opcional): `ALTER FUNCTION public.catalogo_precos_espelhar_valor_normal() SET search_path = public, pg_temp;` — já refletida no SQL do repositório.
 - Descartar o snapshot só depois da publicação estável: `drop schema backup_20261022 cascade;`
+
+## Ajuste de search_path (aplicado em produção em 22/10/2026)
+
+`alter function public.catalogo_precos_espelhar_valor_normal() set search_path = public, pg_temp;` — confirmado em `pg_proc.proconfig`.
+
+## Checklist de merge/deploy (pendente de autorização)
+
+Estado: `main` está 0 commits à frente da branch (31 atrás) → merge sem conflitos, fast-forward. Publicação = GitHub Pages a partir da `main` (domínio `painel.bezclean.com.br`). O banco já está migrado.
+
+1. **Antes:** testes locais passam (feito); backup externo + snapshot `backup_20261022` (feito).
+2. **Merge:** `git checkout main && git merge --ff-only feat/tabela-de-precos && git push origin main`.
+3. **Aguardar o Pages** (1–3 min). O service worker novo (`20261022a`) troca o cache sozinho; no celular instalado como PWA, fechar e reabrir o app uma ou duas vezes.
+4. **Smoke test logado (≈5 min):**
+   - Configurações → Tabela de Preços abre e lista 28 serviços; editar um preço de Desconto de um serviço de teste e reverter (ou não mexer em nada).
+   - Novo orçamento: adicionar Sofá, trocar Normal → Desconto → editar preço; salvar; abrir detalhes (riscado só no Desconto); Gerar PDF; Abrir WhatsApp.
+   - Abrir um orçamento antigo: valores e riscado iguais aos de antes; editar e salvar sem alterar nada.
+   - Aprovar e agendar um orçamento de teste; conferir Agenda; apagar o teste depois.
+   - Conferir no celular (375 px) o seletor de Modalidade.
+5. **Rollback do deploy:** `git revert -m 1 <merge>` (ou `git reset`+push forçado só se você autorizar) e push; o banco migrado continua compatível com o painel antigo (colunas novas ignoradas, trigger mantém `valor`).
+6. **Rollback do banco (só se necessário):** SQL em "Rollback" acima.
+7. **Depois de estável (dias):** `drop schema backup_20261022 cascade;` e, no Supabase Auth, avaliar a proteção contra senhas vazadas (separado).
