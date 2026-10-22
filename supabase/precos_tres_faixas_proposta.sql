@@ -71,7 +71,7 @@ BEGIN
     RAISE EXCEPTION 'RLS deve permanecer habilitado em public.orcamento_itens';
   END IF;
 END
-$;
+$$;
 
 -- Estrutura aditiva: nenhum serviço é inserido, alterado ou removido aqui.
 ALTER TABLE public.catalogo_precos
