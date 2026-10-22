@@ -164,6 +164,7 @@ ALTER TABLE public.orcamento_itens
 CREATE OR REPLACE FUNCTION public.catalogo_precos_espelhar_valor_normal()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF TG_OP = 'INSERT' THEN

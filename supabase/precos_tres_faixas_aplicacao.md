@@ -58,3 +58,10 @@ Se a Tabela de Preços já foi usada: antes do rollback, `update public.catalogo
 ## Autorização necessária
 
 Responda "autorizo" para: (1) criar o snapshot `backup_20261022`; (2) aplicar a migração; (3) rodar a validação. Merge e deploy exigem autorização separada.
+
+## Aplicado em 22/10/2026
+
+- Snapshot `backup_20261022` criado (28/23/40) e backup externo verificado. Migração `precos_tres_faixas` aplicada via apply_migration.
+- Validação: contagens e hashes das colunas originais idênticos ao pré-migração; `valor_normal = valor` nos 28; nenhum desconto/especial/modalidade preenchido; RLS e políticas intactas; trigger e 4 constraints validadas.
+- Advisor: aviso novo `function_search_path_mutable` na função do trigger. Correção (pendente, opcional): `ALTER FUNCTION public.catalogo_precos_espelhar_valor_normal() SET search_path = public, pg_temp;` — já refletida no SQL do repositório.
+- Descartar o snapshot só depois da publicação estável: `drop schema backup_20261022 cascade;`
