@@ -1,11 +1,11 @@
-const APP_VERSION = "20261015a";
+const APP_VERSION = "20261022a";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).then(registration => registration.update()).catch(() => {}));
 }
 
 const quoteMoney = value => new Intl.NumberFormat("pt-BR", {style:"currency",currency:"BRL"}).format(+value || 0);
-const hasPromotion = item => { const hasLowerOriginal = Number.isFinite(+item.valor_original) && +item.valor_original > +item.valor_unitario; return item.modalidade_preco === "desconto" && hasLowerOriginal; };
+const hasPromotion = item => { const hasLowerOriginal = Number.isFinite(+item.valor_original) && +item.valor_original > +item.valor_unitario; return (item.modalidade_preco === "desconto" || item.modalidade_preco == null) && hasLowerOriginal; };
 const quoteInstallment = quote => (+quote.valor_total || 0) * 1.14 / 3;
 
 const quoteWhatsAppButton = document.getElementById("sendWhatsApp");
