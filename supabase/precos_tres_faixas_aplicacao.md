@@ -1,0 +1,60 @@
+# Aplicação em produção — três preços (pendente de autorização)
+
+Projeto `qunaqtxadifmwbmycqum` (bezclean-painel, sa-east-1, Postgres 17). Nada abaixo foi executado.
+
+## Estado verificado (SELECT, 22/10/2026)
+
+- Catálogo: 28 serviços (28 ativos). Orçamentos: **23**. Itens: **40** (16 com `valor_original`).
+- Colunas novas ausentes; RLS ativo em `catalogo_precos` e `orcamento_itens`; nenhum trigger em `catalogo_precos`.
+- A migração foi testada em Postgres real local (idempotência, trigger, constraints, histórico intacto).
+
+## Impacto
+
+- Só adiciona 3 colunas no catálogo (`valor_normal` preenchido com `valor`; desconto/especial NULL), 1 coluna nos itens (NULL = histórico), 4 constraints e 1 trigger.
+- Não altera nenhum orçamento ou item; nenhum preço do catálogo muda. Execução em uma transação (`BEGIN…COMMIT`): erro = nada é aplicado.
+- Bloqueio breve (milissegundos) em tabelas minúsculas.
+- Compatibilidade: o painel **em produção hoje** continua funcionando (ignora colunas novas; o trigger mantém `valor` ↔ `valor_normal`). Portanto aplicar o SQL antes do deploy é seguro.
+- Atenção: a branch só deve ir ao ar **depois** do SQL (ela seleciona as colunas novas).
+
+## Backup (antes do SQL)
+
+1. Confirmar no painel Supabase → Database → Backups que existe backup diário/PITR recente (não consultável por aqui).
+2. Snapshot lógico dentro do banco, em schema não exposto pela API:
+
+```sql
+create schema if not exists backup_20261022;
+create table backup_20261022.catalogo_precos as table public.catalogo_precos;
+create table backup_20261022.orcamentos as table public.orcamentos;
+create table backup_20261022.orcamento_itens as table public.orcamento_itens;
+-- conferir: 28 / 23 (ou atual) / 40 (ou atual)
+select (select count(*) from backup_20261022.catalogo_precos), (select count(*) from backup_20261022.orcamentos), (select count(*) from backup_20261022.orcamento_itens);
+```
+
+## Aplicação
+
+Executar `precos_tres_faixas_proposta.sql` inteiro (commit `637af5c` corrige o delimitador), depois as consultas de `precos_tres_faixas_validacao.md` (contagens iguais, `valor_normal = valor` nos 28, itens históricos inalterados).
+
+## Rollback
+
+Antes de qualquer preço novo ser configurado (reversão limpa):
+
+```sql
+begin;
+drop trigger if exists catalogo_precos_espelhar_valor_normal on public.catalogo_precos;
+drop function if exists public.catalogo_precos_espelhar_valor_normal();
+alter table public.catalogo_precos
+  drop constraint if exists catalogo_precos_valor_normal_nao_negativo,
+  drop constraint if exists catalogo_precos_valor_desconto_nao_negativo,
+  drop constraint if exists catalogo_precos_valor_especial_nao_negativo,
+  drop column if exists valor_normal, drop column if exists valor_desconto, drop column if exists valor_especial;
+alter table public.orcamento_itens
+  drop constraint if exists orcamento_itens_modalidade_preco_valida,
+  drop column if exists modalidade_preco;
+commit;
+```
+
+Se a Tabela de Preços já foi usada: antes do rollback, `update public.catalogo_precos set valor = valor_normal;` (o trigger já mantém iguais). Descontos/especiais configurados e modalidades dos itens novos seriam perdidos. Os dados originais podem ser conferidos no schema `backup_20261022`. Depois do rollback, reverter o deploy do painel.
+
+## Autorização necessária
+
+Responda "autorizo" para: (1) criar o snapshot `backup_20261022`; (2) aplicar a migração; (3) rodar a validação. Merge e deploy exigem autorização separada.
