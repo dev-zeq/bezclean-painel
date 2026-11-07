@@ -68,5 +68,23 @@
     };
   }
 
-  return { parseMoney, parseOptionalMoney, formatMoney, formatOptionalMoney, isRealDiscount, validateService, updatePayload };
+  function promoActive(promo, today) {
+    if (!promo || !promo.ativa || !(Number(promo.percentual) > 0)) return false;
+    return !promo.ate || String(today) <= String(promo.ate);
+  }
+
+  function promoApplies(promo, service, today) {
+    if (!promoActive(promo, today) || !service) return false;
+    const categories = promo.categorias || [];
+    return !categories.length || categories.includes(service.categoria);
+  }
+
+  function promoPrice(service, promo, today) {
+    if (!promoApplies(promo, service, today)) return null;
+    const normal = service.valor_normal != null ? service.valor_normal : service.valor;
+    if (normal == null || !Number.isFinite(Number(normal))) return null;
+    return Math.round(Number(normal) * (100 - Number(promo.percentual))) / 100;
+  }
+
+  return { promoActive, promoApplies, promoPrice, parseMoney, parseOptionalMoney, formatMoney, formatOptionalMoney, isRealDiscount, validateService, updatePayload };
 });
