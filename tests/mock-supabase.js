@@ -13,6 +13,7 @@ class FixtureQuery{
  range(offset,end){this.offset=offset;this.end=end;return this;}
  eq(k,v){this.filters.push(r=>r[k]===v);return this;}
  in(k,v){this.filters.push(r=>v.includes(r[k]));return this;}
+ is(k,v){this.filters.push(r=>(r[k]??null)===v);return this;}
  single(){this.one=true;return this;}
  insert(payload){this.insertRows=Array.isArray(payload)?payload:[payload];return this;}
  update(payload){this.payload=payload;return this;}
