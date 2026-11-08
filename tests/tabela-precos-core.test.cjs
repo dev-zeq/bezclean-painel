@@ -31,3 +31,14 @@ assert.deepEqual(core.updatePayload({ nome: "  Poltrona  ", valor_normal: 190, v
 });
 
 console.log("tabela-precos-core: 17 assertions passed");
+
+{
+  const promo = { ativa: true, percentual: 50, categorias: ["sofa"], ate: "2026-11-30" };
+  const sofa = { categoria: "sofa", valor_normal: 399 };
+  assert.equal(core.promoPrice(sofa, promo, "2026-11-10"), 199.5);
+  assert.equal(core.promoPrice({ categoria: "colchao", valor_normal: 300 }, promo, "2026-11-10"), null);
+  assert.equal(core.promoPrice(sofa, promo, "2026-12-01"), null);
+  assert.equal(core.promoPrice(sofa, { ...promo, ativa: false }, "2026-11-10"), null);
+  assert.equal(core.promoPrice({ categoria: "colchao", valor_normal: 300 }, { ...promo, categorias: [], ate: null }, "2027-01-01"), 150);
+  assert.equal(core.promoPrice(sofa, null, "2026-11-10"), null);
+}

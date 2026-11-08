@@ -4,6 +4,7 @@
   const core = window.PriceTableCore;
   const categories = { sofa: "Sofás", poltrona: "Poltronas", colchao: "Colchões", cadeiras: "Cadeiras", automotivo: "Automotivo", sofa_modelo: "Adicionais para sofá" };
   let services = [];
+  let promo = null;
 
   function escape(value) {
     const element = document.createElement("i");
@@ -132,6 +133,60 @@
     $("categoryFilter").innerHTML = '<option value="">Todas as categorias</option>' + values.map(value => '<option value="' + escape(value) + '">' + escape(categoryLabel(value)) + "</option>").join("");
   }
 
+
+  function today() {
+    return new Date().toLocaleDateString("en-CA");
+  }
+
+  function promoSelectedCategories() {
+    return [...document.querySelectorAll("[data-promo-cat]:checked")].map(input => input.dataset.promoCat);
+  }
+
+  function renderPromo() {
+    const selected = promo && promo.categorias ? promo.categorias : [];
+    const values = [...new Set(services.map(service => service.categoria || "outros"))].sort((a, b) => categoryLabel(a).localeCompare(categoryLabel(b), "pt-BR"));
+    $("promoActive").checked = Boolean(promo && promo.ativa);
+    $("promoPercent").value = promo && Number(promo.percentual) > 0 ? String(Number(promo.percentual)).replace(".", ",") : "";
+    $("promoUntil").value = (promo && promo.ate) || "";
+    $("promoAll").checked = !selected.length;
+    $("promoCategories").innerHTML = values.map(value => '<label><input type="checkbox" data-promo-cat="' + escape(value) + '"' + (selected.includes(value) ? " checked" : "") + "> " + escape(categoryLabel(value)) + "</label>").join("");
+    document.querySelectorAll("[data-promo-cat]").forEach(input => input.onchange = () => { $("promoAll").checked = !promoSelectedCategories().length; });
+    $("promoAll").onchange = () => { if ($("promoAll").checked) document.querySelectorAll("[data-promo-cat]").forEach(input => { input.checked = false; }); else $("promoAll").checked = !promoSelectedCategories().length; };
+    const live = core.promoActive(promo, today());
+    $("promoSummary").textContent = live ? "No ar: " + Number(promo.percentual) + "% de desconto em " + (selected.length ? selected.map(categoryLabel).join(", ") : "todos os serviços") + (promo.ate ? " até " + promo.ate.split("-").reverse().join("/") : "") + "." : "";
+  }
+
+  async function savePromo() {
+    const message = $("promoMessage");
+    const text = $("promoPercent").value.trim();
+    const percent = text === "" ? 0 : core.parseMoney(text);
+    const active = $("promoActive").checked;
+    if (!Number.isFinite(percent) || percent < 0 || percent > 100 || (active && percent <= 0)) {
+      message.textContent = "Informe uma porcentagem de 1 a 100.";
+      return;
+    }
+    const categories = $("promoAll").checked ? [] : promoSelectedCategories();
+    if (!$("promoAll").checked && !categories.length) {
+      message.textContent = "Escolha onde a promoção vale.";
+      return;
+    }
+    $("promoSave").disabled = true;
+    message.textContent = "Salvando…";
+    const session = await db.auth.getSession();
+    const payload = { ativa: active, percentual: percent, categorias: categories, ate: $("promoUntil").value || null, updated_at: new Date().toISOString() };
+    if (promo && promo.id) payload.id = promo.id;
+    else payload.owner_id = session.data.session.user.id;
+    const result = await db.from("promocao_precos").upsert(payload, { onConflict: "owner_id" }).select("id,ativa,percentual,categorias,ate").single();
+    $("promoSave").disabled = false;
+    if (result.error) {
+      message.textContent = "Não foi possível salvar a promoção. Detalhe: " + (result.error.message || result.error);
+      return;
+    }
+    promo = result.data;
+    renderPromo();
+    message.textContent = active ? "Promoção salva e ativa." : "Promoção salva (desligada).";
+  }
+
   async function load() {
     setStatus("Carregando tabela de preços…");
     const result = await db.from("catalogo_precos").select("id,nome,categoria,tipo,destaque,ativo,valor_normal,valor_desconto,valor_especial").order("categoria").order("nome");
@@ -142,7 +197,10 @@
       return;
     }
     services = result.data || [];
+    const promoResult = await db.from("promocao_precos").select("id,ativa,percentual,categorias,ate").maybeSingle();
+    promo = promoResult.error ? null : promoResult.data;
     populateCategories();
+    renderPromo();
     render();
     setStatus(services.length ? services.length + " serviços carregados." : "Nenhum serviço encontrado.");
   }
@@ -154,6 +212,7 @@
       return;
     }
     ["priceSearch", "categoryFilter", "activeFilter"].forEach(id => $(id).addEventListener(id === "priceSearch" ? "input" : "change", render));
+    $("promoSave").onclick = savePromo;
     await load();
   }
 
