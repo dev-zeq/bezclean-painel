@@ -56,6 +56,10 @@ assert.equal(A.conflicts(events, blocks, at(12, 9), at(12, 11), "b").length, 1, 
 assert.equal(A.conflicts([], blocks, at(13, 9), at(13, 12))[0].label, "08:00–10:00 · Horário bloqueado (Médico)");
 assert.match(A.conflicts([ev("p", 15, 8, 12, { status: "provisorio" })], [], at(15, 9), at(15, 10))[0].label, /provisório/);
 assert.equal(A.conflicts([ev("t", 15, 8, 12, { excluido_em: "2026-11-01" })], [], at(15, 9), at(15, 10)).length, 0, "lixeira não conta");
+// Apartamento administrado no Airbnb aparece marcado
+assert.equal(A.isAirbnb({ apartamentos: { nome: "501", airbnb: true } }), true);
+assert.equal(A.isAirbnb(events[2]), false);
+assert.match(A.conflicts([ev("z", 16, 8, 12, { tipo: "apartamento", clientes: null, apartamentos: { nome: "Apto 501", airbnb: true } })], [], at(16, 9), at(16, 10))[0].label, /Apto 501 \(Apartamento Airbnb\)/);
 assert.match(A.conflictMessage(clash), /Deseja agendar mesmo assim\?$/);
 
 // Consulta ao banco (simulada)

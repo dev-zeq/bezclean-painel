@@ -223,6 +223,7 @@ button.ev:hover,.day-card:is(button):hover{filter:brightness(.97)}
 .apt-list{display:grid;gap:8px;margin:12px 0}
 .apt-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--border);border-left:4px solid #7a4fc4;border-radius:10px}
 .apt-item.inactive{opacity:.6}
+.airbnb-tag{display:inline-block;margin-left:4px;padding:1px 6px;color:#fff;font-size:.66rem;font-weight:800;letter-spacing:.02em;vertical-align:middle;background:#e0565b;border-radius:999px}
 .apt-item b,.apt-item small{display:block}
 .apt-item small{margin-top:2px;color:var(--muted);font-size:.8rem}
 .apt-item button{flex:none;padding:7px 11px;font-size:.82rem}

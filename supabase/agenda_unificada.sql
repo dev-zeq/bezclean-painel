@@ -16,9 +16,11 @@ create table if not exists public.apartamentos (
   contato_telefone text,
   observacoes text,
   ativo boolean not null default true,
+  airbnb boolean not null default false, -- apartamento administrado pela Bez Clean no Airbnb
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+alter table public.apartamentos add column if not exists airbnb boolean not null default false;
 create index if not exists apartamentos_owner_idx on public.apartamentos (owner_id);
 alter table public.apartamentos enable row level security;
 drop policy if exists "Apartamento: proprietário acessa seus dados" on public.apartamentos;

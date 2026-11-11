@@ -32,6 +32,10 @@
     faxina: ["Faxina residencial", "Limpeza pesada", "Limpeza pós-obra", "Limpeza comercial"]
   };
 
+  const AIRBNB_CLEANING = "Troca de hóspede (Airbnb)";
+  // Apartamento que a própria Bez Clean administra no Airbnb (os demais são faxinas para o dono).
+  const isAirbnb = event => !!(event && event.apartamentos && event.apartamentos.airbnb);
+
   const pad = n => String(n).padStart(2, "0");
   const dateKey = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   const hhmm = d => pad(d.getHours()) + ":" + pad(d.getMinutes());
@@ -92,7 +96,7 @@
     (events || []).forEach(event => {
       if (event.id === ignoreId || !isActive(event)) return;
       const s = new Date(event.inicio_em), e = new Date(event.fim_em);
-      if (overlaps(start, end, s, e)) found.push({ kind: "event", start: s, end: e, label: hhmm(s) + "–" + hhmm(e) + " · " + title(event) + " (" + TYPES[typeOf(event)].short + (event.status === "provisorio" ? ", provisório" : "") + ")" });
+      if (overlaps(start, end, s, e)) found.push({ kind: "event", start: s, end: e, label: hhmm(s) + "–" + hhmm(e) + " · " + title(event) + " (" + TYPES[typeOf(event)].short + (isAirbnb(event) ? " Airbnb" : "") + (event.status === "provisorio" ? ", provisório" : "") + ")" });
     });
     (blocks || []).forEach(block => {
       const s = new Date(block.inicio_em), e = new Date(block.fim_em);
@@ -105,7 +109,7 @@
   async function findConflicts(db, start, end, ignoreId) {
     const from = start.toISOString(), to = end.toISOString();
     const [events, blocks] = await Promise.all([
-      db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,excluido_em,clientes(nome),apartamentos(nome)").is("excluido_em", null).lt("inicio_em", to).gt("fim_em", from),
+      db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,excluido_em,clientes(nome),apartamentos(nome,airbnb)").is("excluido_em", null).lt("inicio_em", to).gt("fim_em", from),
       db.from("bloqueios_agenda").select("inicio_em,fim_em,motivo").lt("inicio_em", to).gt("fim_em", from)
     ]);
     if (events.error) throw events.error;
@@ -133,7 +137,7 @@
   }
 
   return {
-    TYPES: TYPES, STATUS: STATUS, PERIODS: PERIODS, HALVES: HALVES, CLEANING_TYPES: CLEANING_TYPES,
+    TYPES: TYPES, STATUS: STATUS, PERIODS: PERIODS, HALVES: HALVES, CLEANING_TYPES: CLEANING_TYPES, AIRBNB_CLEANING: AIRBNB_CLEANING, isAirbnb: isAirbnb,
     dateKey: dateKey, hhmm: hhmm, addDays: addDays, minutes: minutes, typeOf: typeOf, isActive: isActive, title: title,
     periodOf: periodOf, range: range, overlaps: overlaps, halvesOf: halvesOf, dayBuckets: dayBuckets, isFree: isFree,
     conflicts: conflicts, findConflicts: findConflicts, conflictMessage: conflictMessage,

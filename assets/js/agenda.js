@@ -41,7 +41,7 @@ async function loadAgenda() {
   const request = ++agendaRequest, { start, end } = Core.viewRange(calendarMode, currentDate);
   $("selectedDate").textContent = rangeTitle(start, end);
   const [events, blocks] = await Promise.all([
-    db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,descricao_servico,valor,endereco,clientes(nome,telefone),apartamentos(nome,edificio)").is("excluido_em", null).lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em"),
+    db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,descricao_servico,valor,endereco,clientes(nome,telefone),apartamentos(nome,edificio,airbnb)").is("excluido_em", null).lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em"),
     db.from("bloqueios_agenda").select("id,inicio_em,fim_em,motivo").lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em")
   ]);
   if (request !== agendaRequest) return;
@@ -62,10 +62,11 @@ function renderSummary() {
 }
 
 const eventClass = event => "ev-" + Core.typeOf(event) + " st-" + event.status;
+const airbnbTag = event => Core.isAirbnb(event) ? ' <b class="airbnb-tag">Airbnb</b>' : "";
 
 function chip(entry) {
   if (entry.kind === "block") return '<span class="ev ev-block"><em>' + Core.hhmm(entry.start) + "</em><span>Bloqueado" + (entry.item.motivo ? " · " + esc(entry.item.motivo) : "") + "</span></span>";
-  return '<button type="button" class="ev ' + eventClass(entry.item) + '" data-event="' + entry.item.id + '"><em>' + Core.hhmm(entry.start) + "</em><span>" + esc(Core.title(entry.item)) + "</span></button>";
+  return '<button type="button" class="ev ' + eventClass(entry.item) + '" data-event="' + entry.item.id + '"><em>' + Core.hhmm(entry.start) + "</em><span>" + esc(Core.title(entry.item)) + airbnbTag(entry.item) + "</span></button>";
 }
 
 function renderAgendaView(start) {
@@ -106,7 +107,7 @@ function renderAgendaView(start) {
         const range = Core.hhmm(entry.start) + "–" + Core.hhmm(entry.end);
         if (entry.kind === "block") return '<div class="day-card ev-block"><div class="day-time">' + range + '</div><div><div class="event-title"><span>Horário bloqueado</span></div><p>' + esc(entry.item.motivo || "Indisponível") + "</p></div></div>";
         const event = entry.item;
-        return '<button type="button" class="day-card ' + eventClass(event) + '" data-event="' + event.id + '"><div class="day-time">' + range + '</div><div><div class="event-title"><span>' + esc(Core.title(event)) + '</span><span class="status ' + event.status + '">' + (Core.STATUS[event.status] || event.status) + "</span></div><p>" + Core.TYPES[Core.typeOf(event)].short + " · " + esc(event.descricao_servico) + (+event.valor ? " · " + money(event.valor) : "") + "</p></div></button>";
+        return '<button type="button" class="day-card ' + eventClass(event) + '" data-event="' + event.id + '"><div class="day-time">' + range + '</div><div><div class="event-title"><span>' + esc(Core.title(event)) + airbnbTag(event) + '</span><span class="status ' + event.status + '">' + (Core.STATUS[event.status] || event.status) + "</span></div><p>" + Core.TYPES[Core.typeOf(event)].short + " · " + esc(event.descricao_servico) + (+event.valor ? " · " + money(event.valor) : "") + "</p></div></button>";
       }).join("");
       return '<section class="day-half"><header><h3>' + half.label + '</h3><span class="avail ' + (free ? "free" : "busy") + '">' + (free ? "Livre" : busy + " compromisso" + (busy > 1 ? "s" : "")) + '</span><button type="button" class="secondary" data-new="' + key + "|" + half.id + '">+ Agendar</button></header>' + (cards ? '<div class="day-list">' + cards + "</div>" : '<p class="day-free">Período livre.</p>') + "</section>";
     }).join("") + "</div>";
@@ -126,13 +127,13 @@ function renderAgendaView(start) {
 /* ---------- Detalhes ---------- */
 
 async function openDetails(id) {
-  const { data, error } = await db.from("agendamentos").select("*,clientes(nome,telefone,endereco),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone),agendamento_itens(*)").eq("id", id).single();
+  const { data, error } = await db.from("agendamentos").select("*,clientes(nome,telefone,endereco),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone,airbnb),agendamento_itens(*)").eq("id", id).single();
   if (error) { toast("Não foi possível abrir o atendimento."); return; }
   currentAppointment = data;
   const type = Core.typeOf(data), start = new Date(data.inicio_em), contact = data.apartamentos && [data.apartamentos.contato_nome, data.apartamentos.contato_telefone].filter(Boolean).join(" · ");
   $("detailsTitle").textContent = Core.title(data);
   $("detailsContent").innerHTML =
-    '<p><span class="type-tag ev-' + type + '">' + Core.TYPES[type].short + '</span> <span class="status ' + data.status + '">' + (Core.STATUS[data.status] || data.status) + "</span></p>" +
+    '<p><span class="type-tag ev-' + type + '">' + Core.TYPES[type].short + '</span>' + airbnbTag(data) + ' <span class="status ' + data.status + '">' + (Core.STATUS[data.status] || data.status) + "</span></p>" +
     "<p><b>" + time(data.inicio_em) + "–" + time(data.fim_em) + "</b> · " + new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "long" }).format(start) + "</p>" +
     (data.apartamentos && data.apartamentos.edificio ? "<p>" + esc(data.apartamentos.edificio) + "</p>" : "") +
     "<p>" + esc(data.descricao_servico) + "</p>" +
@@ -160,7 +161,7 @@ function setAppointmentType(type) {
   $("apartmentSection").classList.toggle("hidden", appointmentType !== "apartamento");
   $("servicesSection").classList.toggle("hidden", appointmentType !== "estofados");
   $("cleaningTypeField").classList.toggle("hidden", appointmentType === "estofados");
-  $("cleaningTypeOptions").innerHTML = (Core.CLEANING_TYPES[appointmentType] || []).map(option => '<option value="' + option + '">').join("");
+  $("cleaningTypeOptions").innerHTML = (Core.CLEANING_TYPES[appointmentType] || []).concat(appointmentType === "apartamento" ? [Core.AIRBNB_CLEANING] : []).map(option => '<option value="' + option + '">').join("");
   $("appointmentValueHint").textContent = appointmentType === "estofados" ? "ajustável" : "opcional";
   if (appointmentType !== "estofados" && !$("cleaningType").value) $("cleaningType").value = Core.CLEANING_TYPES[appointmentType][0];
 }
@@ -296,7 +297,7 @@ async function saveAppointment(event) {
 
 /* ---------- Apartamentos ---------- */
 
-const apartmentLabel = apartment => apartment.nome + (apartment.edificio ? " · " + apartment.edificio : "");
+const apartmentLabel = apartment => apartment.nome + (apartment.edificio ? " · " + apartment.edificio : "") + (apartment.airbnb ? " · Airbnb" : "");
 
 async function loadApartments() {
   const { data, error } = await db.from("apartamentos").select("*").order("nome");
@@ -312,7 +313,7 @@ function renderApartmentOptions() {
 }
 
 function renderApartmentList() {
-  $("apartmentList").innerHTML = apartments.length ? apartments.map(item => '<div class="apt-item' + (item.ativo ? "" : " inactive") + '"><div><b>' + esc(item.nome) + "</b><small>" + esc([item.edificio, item.contato_nome, item.ativo ? "" : "inativo"].filter(Boolean).join(" · ") || "Sem detalhes") + '</small></div><button type="button" class="secondary" data-apartment="' + item.id + '">Editar</button></div>').join("") : '<p class="hint">Nenhum apartamento cadastrado ainda. Cadastre abaixo uma única vez e depois é só selecionar.</p>';
+  $("apartmentList").innerHTML = apartments.length ? apartments.map(item => '<div class="apt-item' + (item.ativo ? "" : " inactive") + '"><div><b>' + esc(item.nome) + "</b><small>" + esc([item.airbnb ? "Airbnb (nós cuidamos)" : "", item.edificio, item.contato_nome, item.ativo ? "" : "inativo"].filter(Boolean).join(" · ") || "Sem detalhes") + '</small></div><button type="button" class="secondary" data-apartment="' + item.id + '">Editar</button></div>').join("") : '<p class="hint">Nenhum apartamento cadastrado ainda. Cadastre abaixo uma única vez e depois é só selecionar.</p>';
   $("apartmentList").querySelectorAll("[data-apartment]").forEach(button => button.onclick = () => fillApartmentForm(apartments.find(item => item.id === button.dataset.apartment)));
 }
 
@@ -322,6 +323,7 @@ function fillApartmentForm(apartment) {
   $("apartmentFormTitle").textContent = apartment ? "Editar " + apartment.nome : "Novo apartamento";
   $("aptBuilding").value = apartment ? apartment.edificio || "" : "Edifício São Remo";
   $("aptActive").checked = apartment ? apartment.ativo : true;
+  $("aptAirbnb").checked = !!(apartment && apartment.airbnb);
   if (apartment) {
     $("aptName").value = apartment.nome;
     $("aptAddress").value = apartment.endereco || "";
@@ -341,7 +343,7 @@ function openApartments() {
 async function saveApartment(event) {
   event.preventDefault();
   const id = $("apartmentId").value, text = field => $(field).value.trim() || null;
-  const payload = { nome: $("aptName").value.trim(), edificio: text("aptBuilding"), endereco: text("aptAddress"), contato_nome: text("aptContact"), contato_telefone: text("aptPhone"), observacoes: text("aptNotes"), ativo: $("aptActive").checked };
+  const payload = { nome: $("aptName").value.trim(), edificio: text("aptBuilding"), endereco: text("aptAddress"), contato_nome: text("aptContact"), contato_telefone: text("aptPhone"), observacoes: text("aptNotes"), ativo: $("aptActive").checked, airbnb: $("aptAirbnb").checked };
   if (!payload.nome) return message("apartmentMessage", "Informe o nome ou número do apartamento.");
   const result = id ? await db.from("apartamentos").update({ ...payload, updated_at: new Date().toISOString() }).eq("id", id).select("id").single() : await db.from("apartamentos").insert(payload).select("id").single();
   if (result.error) return message("apartmentMessage", result.error.message);
@@ -365,7 +367,7 @@ $("appointmentForm").onsubmit = saveAppointment;
 document.querySelectorAll("#typeToggle [data-type]").forEach(button => button.onclick = () => setAppointmentType(button.dataset.type));
 $("periodSelect").onchange = () => { updatePeriodFields(); scheduleConflictCheck(); };
 ["appointmentDate", "appointmentTime", "duration"].forEach(id => $(id).addEventListener("change", scheduleConflictCheck));
-$("apartmentSelect").onchange = () => { const apartment = apartments.find(item => item.id === $("apartmentSelect").value); if (apartment) $("appointmentAddress").value = [apartment.edificio, apartment.endereco].filter(Boolean).join(" · "); };
+$("apartmentSelect").onchange = () => { const apartment = apartments.find(item => item.id === $("apartmentSelect").value); if (!apartment) return; $("appointmentAddress").value = [apartment.edificio, apartment.endereco].filter(Boolean).join(" · "); const cleaning = $("cleaningType"), presets = Core.CLEANING_TYPES.apartamento.concat(Core.AIRBNB_CLEANING); if (!cleaning.value || presets.includes(cleaning.value)) cleaning.value = apartment.airbnb ? Core.AIRBNB_CLEANING : Core.CLEANING_TYPES.apartamento[0]; };
 $("apartmentsBtn").onclick = openApartments;
 $("manageApartments").onclick = openApartments;
 $("apartmentForm").onsubmit = saveApartment;
