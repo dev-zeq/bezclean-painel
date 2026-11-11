@@ -321,7 +321,7 @@ function fillApartmentForm(apartment) {
   $("apartmentForm").reset();
   $("apartmentId").value = apartment ? apartment.id : "";
   $("apartmentFormTitle").textContent = apartment ? "Editar " + apartment.nome : "Novo apartamento";
-  $("aptBuilding").value = apartment ? apartment.edificio || "" : "Edifício São Remo";
+  $("aptBuilding").value = apartment ? apartment.edificio || "" : "Edifício San Remo";
   $("aptActive").checked = apartment ? apartment.ativo : true;
   $("aptAirbnb").checked = !!(apartment && apartment.airbnb);
   if (apartment) {

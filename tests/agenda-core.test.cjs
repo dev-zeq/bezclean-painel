@@ -26,7 +26,7 @@ assert.deepEqual(A.halvesOf(at(13, 8), at(13, 10), at(12, 0)), { manha: false, t
 const events = [
   ev("a", 12, 14, 16),
   ev("b", 12, 8, 10),
-  ev("c", 12, 8, 17, { tipo: "apartamento", clientes: null, apartamentos: { nome: "São Remo 302" } }),
+  ev("c", 12, 8, 17, { tipo: "apartamento", clientes: null, apartamentos: { nome: "San Remo 302" } }),
   ev("d", 12, 9, 11, { status: "cancelado" })
 ];
 const blocks = [{ inicio_em: at(13, 8).toISOString(), fim_em: at(13, 10).toISOString(), motivo: "Médico" }];
@@ -41,7 +41,7 @@ assert.equal(A.isFree(next.tarde), true);
 assert.equal(A.isFree(A.dayBuckets([ev("x", 14, 9, 11, { status: "cancelado" })], [], at(14, 0)).manha), true, "cancelado não ocupa");
 
 // Título por tipo
-assert.equal(A.title(events[2]), "São Remo 302");
+assert.equal(A.title(events[2]), "San Remo 302");
 assert.equal(A.title(events[0]), "Maria");
 assert.equal(A.title({ tipo: "faxina", clientes: null }), "Cliente");
 assert.equal(A.typeOf({}), "estofados", "agendamento antigo sem tipo é estofados");
@@ -50,7 +50,7 @@ assert.equal(A.typeOf({}), "estofados", "agendamento antigo sem tipo é estofado
 const clash = A.conflicts(events, blocks, at(12, 9), at(12, 11));
 assert.deepEqual(clash.map(x => x.kind), ["event", "event"], "cancelado fica de fora");
 assert.match(clash[0].label, /^08:00–10:00 · Maria \(Estofados\)$/);
-assert.match(clash[1].label, /São Remo 302 \(Apartamento\)/);
+assert.match(clash[1].label, /San Remo 302 \(Apartamento\)/);
 assert.equal(A.conflicts(events, blocks, at(12, 10), at(12, 12), "c").length, 0, "encostar no horário não é conflito; ignora o próprio registro");
 assert.equal(A.conflicts(events, blocks, at(12, 9), at(12, 11), "b").length, 1, "em edição, ignora só o próprio");
 assert.equal(A.conflicts([], blocks, at(13, 9), at(13, 12))[0].label, "08:00–10:00 · Horário bloqueado (Médico)");
