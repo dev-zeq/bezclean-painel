@@ -1,4 +1,4 @@
-const APP_VERSION = "20261022d";
+const APP_VERSION = "20261111a";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).then(registration => registration.update()).catch(() => {}));
@@ -58,22 +58,7 @@ if (quoteDetailActions) {
 }
 
 
-// Acesso a Campanhas também no computador.
-const campaignNav = document.querySelector(".top .nav, .topbar-nav");
-if (campaignNav && !campaignNav.querySelector("a[href*=campanhas]")) {
-  const link = document.createElement("a"); link.href = "/campanhas.html?v=" + APP_VERSION; link.className = "secondary nav-link"; link.textContent = "Campanhas"; campaignNav.appendChild(link);
-}
-
-
-// Navegação das configurações e atalho direto para a Tabela de Preços.
-const settingsNavigation = document.querySelector(".top .nav, .topbar-nav");
-if (settingsNavigation && !/\/configuracoes\.html$/.test(location.pathname) && !settingsNavigation.querySelector("a[href*=configuracoes]")) {
-  const link = document.createElement("a");
-  link.href = "/configuracoes.html?v=" + APP_VERSION;
-  link.className = settingsNavigation.classList.contains("topbar-nav") ? "secondary nav-link" : "back";
-  link.textContent = "Configurações";
-  settingsNavigation.appendChild(link);
-}
+// Atalho direto para a Tabela de Preços nos Orçamentos. O menu fica em assets/js/nav.js.
 if (/\/orcamentos\.html$/.test(location.pathname) && !document.getElementById("priceTableShortcut")) {
   const newQuoteButton = document.getElementById("newQuote");
   if (newQuoteButton) {
