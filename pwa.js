@@ -1,4 +1,4 @@
-const APP_VERSION = "20261116a";
+const APP_VERSION = "20261119a";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).then(registration => registration.update()).catch(() => {}));

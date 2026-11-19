@@ -16,3 +16,5 @@ Antes da publicação:
 Atualização de 05/10/2026: o usuário executou a migração com sucesso no Supabase. O conector confirmou as três novas tabelas, RLS habilitado e todos os campos adicionais nas tabelas existentes. O advisor não apontou problemas nas tabelas da campanha.
 
 Consultas SQL continuam bloqueadas porque o ambiente exige aprovação e a política é `never`. O acesso ao painel pelo navegador também foi recusado. Os cenários autenticados e a inspeção visual de Safari/iPhone ainda não foram executados nesta sessão. O usuário autorizou publicar para teste no celular e computador com essas limitações informadas.
+
+`node tests/orcamento-acrescimo.test.cjs`: cálculo do "+40% riscado" (preço riscado = preço final + 40%) e reconhecimento de itens salvos com essa opção.
