@@ -13,10 +13,22 @@
     "Tapete", "Banco de carro"
   ];
 
-  // Ajusta o item à oferta: ligada = preço digitado como 40% de desconto sobre o riscado;
-  // desligada = só o preço digitado.
+  // A oferta vale só para sofás: o nome precisa ter a palavra "sofá"
+  // (com ou sem acento). Ex.: "Sofá 3 lugares", "Sofá-cama", "sofa retratil".
+  const normalize = text => String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  function isSofa(name) {
+    return /(^|[^a-z])sofas?([^a-z]|$)/.test(normalize(name));
+  }
+
+  // O item entra na oferta quando a chave está ligada e ele é sofá.
+  function inOffer(item, offerOn) {
+    return !!offerOn && isSofa(item && item.nome);
+  }
+
+  // Ajusta o item à oferta: na oferta = preço digitado como 40% de desconto
+  // sobre o riscado; fora dela = só o preço digitado.
   function priceItem(item, offerOn) {
-    if (offerOn) {
+    if (inOffer(item, offerOn)) {
       item.modalidade_preco = "desconto";
       item.valor_original = Markup.crossedPrice(item.valor_unitario);
     } else {
@@ -52,5 +64,5 @@
     return typeof value === "boolean" ? value : true;
   }
 
-  return { SHORTCUTS, priceItem, newItem, addShortcut, crossedOf, offerFromMetadata };
+  return { SHORTCUTS, isSofa, inOffer, priceItem, newItem, addShortcut, crossedOf, offerFromMetadata };
 });

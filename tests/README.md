@@ -19,4 +19,4 @@ Consultas SQL continuam bloqueadas porque o ambiente exige aprovação e a polí
 
 `node tests/orcamento-acrescimo.test.cjs`: cálculo do "+40% riscado" (preço riscado = preço final + 40%) e reconhecimento de itens salvos com essa opção.
 
-`node tests/orcamento-seletor.test.cjs`: seletor rápido de itens (atalhos sem preço, soma de quantidade ao repetir o atalho, regra da Oferta 40% ligada/desligada e preferência salva no perfil).
+`node tests/orcamento-seletor.test.cjs`: seletor rápido de itens (atalhos sem preço, soma de quantidade ao repetir o atalho, regra da Oferta 40% só para sofás, ligada/desligada e preferência salva no perfil).
