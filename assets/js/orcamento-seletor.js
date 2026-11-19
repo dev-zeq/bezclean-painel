@@ -13,7 +13,7 @@
     "Tapete", "Banco de carro"
   ];
 
-  // Ajusta o item à oferta: ligada = preço digitado com o valor 40% maior riscado;
+  // Ajusta o item à oferta: ligada = preço digitado como 40% de desconto sobre o riscado;
   // desligada = só o preço digitado.
   function priceItem(item, offerOn) {
     if (offerOn) {

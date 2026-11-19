@@ -15,11 +15,11 @@ assert.equal(P.addShortcut(items, "cadeira ", true), 0);
 assert.equal(items.length, 1);
 assert.equal(items[0].quantidade, 2);
 
-// Com preço digitado e oferta ligada: 40% a mais riscado
+// Com preço digitado e oferta ligada: riscado do qual o preço é 40% off
 items[0].valor_unitario = 60;
 P.priceItem(items[0], true);
-assert.equal(items[0].valor_original, 84);
-assert.equal(P.crossedOf(items[0]), 84);
+assert.equal(items[0].valor_original, 100);
+assert.equal(P.crossedOf(items[0]), 100);
 
 // Oferta desligada: só o preço digitado
 P.priceItem(items[0], false);
