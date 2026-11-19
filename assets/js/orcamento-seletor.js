@@ -7,14 +7,14 @@
   // "Oferta 40%" vigente, que fica ligada até a pessoa desligar.
 
   const SHORTCUTS = [
-    "Sofá 2 lugares", "Sofá 3 lugares", "Sofá 4 lugares", "Sofá retrátil", "Sofá de canto",
+    "Sofá 2 módulos", "Sofá 3 módulos", "Sofá 4 módulos", "Sofá retrátil", "Sofá de canto",
     "Poltrona", "Cadeira", "Puff", "Cabeceira",
     "Colchão solteiro", "Colchão casal", "Colchão queen", "Colchão king",
     "Tapete", "Banco de carro"
   ];
 
   // A oferta vale só para sofás: o nome precisa ter a palavra "sofá"
-  // (com ou sem acento). Ex.: "Sofá 3 lugares", "Sofá-cama", "sofa retratil".
+  // (com ou sem acento). Ex.: "Sofá 3 módulos", "Sofá 3 lugares", "Sofá-cama", "sofa retratil".
   const normalize = text => String(text || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   function isSofa(name) {
     return /(^|[^a-z])sofas?([^a-z]|$)/.test(normalize(name));
