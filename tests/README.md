@@ -18,3 +18,5 @@ Atualização de 05/10/2026: o usuário executou a migração com sucesso no Sup
 Consultas SQL continuam bloqueadas porque o ambiente exige aprovação e a política é `never`. O acesso ao painel pelo navegador também foi recusado. Os cenários autenticados e a inspeção visual de Safari/iPhone ainda não foram executados nesta sessão. O usuário autorizou publicar para teste no celular e computador com essas limitações informadas.
 
 `node tests/orcamento-acrescimo.test.cjs`: cálculo do "+40% riscado" (preço riscado = preço final + 40%) e reconhecimento de itens salvos com essa opção.
+
+`node tests/orcamento-seletor.test.cjs`: seletor rápido de itens (atalhos sem preço, soma de quantidade ao repetir o atalho, regra da Oferta 40% ligada/desligada e preferência salva no perfil).
