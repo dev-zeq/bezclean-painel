@@ -208,7 +208,7 @@
   async function boot() {
     const session = await db.auth.getSession();
     if (!session.data.session) {
-      location.href = "./?v=20261119e";
+      location.href = "./?v=20261119f";
       return;
     }
     ["priceSearch", "categoryFilter", "activeFilter"].forEach(id => $(id).addEventListener(id === "priceSearch" ? "input" : "change", render));

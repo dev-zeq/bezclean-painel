@@ -2,10 +2,14 @@ const assert = require("node:assert/strict");
 const P = require("../assets/js/orcamento-seletor.js");
 
 // O que conta como sofá
-for (const name of ["Sofá 3 lugares", "Sofá retrátil", "Sofá de canto", "sofa 2 lugares", "Sofá-cama", "SOFÁ", "Limpeza de sofás", "Sofa"])
+for (const name of ["Sofá 3 módulos", "sofa 2 modulos", "Sofá 3 lugares", "Sofá retrátil", "Sofá de canto", "sofa 2 lugares", "Sofá-cama", "SOFÁ", "Limpeza de sofás", "Sofa"])
   assert.equal(P.isSofa(name), true, name);
 for (const name of ["Poltrona", "Cadeira", "Colchão casal", "Puff", "Chaise", "Recamier", "Banco de carro", "", null, "Sofazão"])
   assert.equal(P.isSofa(name), false, String(name));
+
+// Atalhos de sofá usam "módulos", não "lugares"
+for (const n of [2, 3, 4]) assert.ok(P.SHORTCUTS.includes("Sofá " + n + " módulos"));
+assert.equal(P.SHORTCUTS.some(name => /lugares/.test(name)), false);
 
 // Todos os atalhos de sofá entram na oferta, os outros não
 for (const name of P.SHORTCUTS)
@@ -14,7 +18,7 @@ assert.equal(P.inOffer({ nome: "Sofá 3 lugares" }, false), false);
 
 // Sofá com oferta ligada: preço digitado é 40% de desconto sobre o riscado
 let items = [];
-assert.equal(P.addShortcut(items, "Sofá 3 lugares", true), 0);
+assert.equal(P.addShortcut(items, "Sofá 3 módulos", true), 0);
 assert.equal(items[0].modalidade_preco, "desconto");
 items[0].valor_unitario = 199;
 P.priceItem(items[0], true);
