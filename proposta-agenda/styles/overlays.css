@@ -110,8 +110,9 @@ dialog.bz-dialog::backdrop {
 .details-info-card {
   padding: 13px 14px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--bz-border);
-  background: var(--bz-surface-tint);
+  border: 1px solid var(--bz-border-strong);
+  background: var(--bz-surface-elevated);
+  box-shadow: var(--bz-highlight-top);
   display: grid;
   gap: 8px;
 }
@@ -165,8 +166,8 @@ dialog.bz-dialog::backdrop {
   gap: 10px;
   padding: 7px 10px;
   border-radius: var(--radius-xs);
-  background: var(--bz-surface);
-  border: 1px solid var(--bz-border);
+  background: var(--bz-surface-tint);
+  border: 1px solid var(--bz-border-strong);
   font-size: 0.86rem;
 }
 
@@ -248,10 +249,11 @@ dialog.bz-dialog::backdrop {
 }
 
 .form-step {
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--bz-border-strong);
   border-radius: var(--radius-md);
   padding: 14px;
-  background: var(--bz-surface);
+  background: var(--bz-surface-elevated);
+  box-shadow: var(--bz-highlight-top);
   display: grid;
   gap: 12px;
 }
@@ -413,7 +415,7 @@ dialog.bz-dialog::backdrop {
   padding: 11px 12px;
   border-radius: var(--radius-sm);
   background: var(--bz-surface-tint);
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--bz-border-strong);
   display: grid;
   gap: 8px;
 }
@@ -435,8 +437,8 @@ dialog.bz-dialog::backdrop {
   position: relative;
   height: 28px;
   border-radius: 7px;
-  background: var(--bz-surface);
-  border: 1px solid var(--bz-border);
+  background: var(--bz-grid-well);
+  border: 1px solid var(--bz-border-strong);
   overflow: hidden;
 }
 
@@ -490,7 +492,7 @@ dialog.bz-dialog::backdrop {
   min-height: 44px;
   padding: 8px 11px;
   border-radius: var(--radius-xs);
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--bz-border-strong);
   background: var(--bz-surface-tint);
   text-align: left;
   font-size: 0.84rem;
@@ -512,7 +514,7 @@ dialog.bz-dialog::backdrop {
   gap: 8px;
   padding: 7px 10px;
   border-radius: var(--radius-xs);
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--bz-border-strong);
   background: var(--bz-surface-alt);
   font-size: 0.84rem;
 }

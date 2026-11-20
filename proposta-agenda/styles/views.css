@@ -14,10 +14,11 @@
 
 /* Mapa visual de ocupação contínua (08h → 18h) */
 .day-timeline-box {
-  background: var(--bz-surface-tint);
-  border: 1px solid var(--bz-border);
+  background: var(--bz-surface-elevated);
+  border: 1px solid var(--bz-border-strong);
   border-radius: var(--radius-md);
   padding: 14px 16px;
+  box-shadow: var(--bz-highlight-top);
 }
 
 .day-timeline-head {
@@ -84,6 +85,12 @@
   background: var(--bz-surface);
   color: var(--ev-ink);
   border: 1.5px dashed var(--ev-color);
+}
+
+:root[data-theme="dark"] .timeline-seg:not(.is-provisional):not(.is-block) {
+  background: var(--ev-bg);
+  color: var(--ev-ink);
+  border: 1.5px solid var(--ev-color);
 }
 
 .timeline-seg.is-completed {
@@ -157,9 +164,10 @@
 }
 
 .period-column {
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--bz-border-strong);
   border-radius: var(--radius-md);
-  background: var(--bz-surface);
+  background: var(--bz-surface-elevated);
+  box-shadow: var(--bz-highlight-top);
   overflow: hidden;
 }
 
@@ -170,7 +178,7 @@
   gap: 10px;
   padding: 12px 14px;
   background: var(--bz-surface-alt);
-  border-bottom: 1px solid var(--bz-border);
+  border-bottom: 1px solid var(--bz-border-strong);
 }
 
 .period-title {
@@ -226,7 +234,7 @@
   text-align: left;
   padding: 12px 13px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--ev-border, var(--bz-border-strong));
   border-left: 5px solid var(--ev-color, var(--bz-blue));
   background: var(--ev-bg, var(--bz-surface-alt));
   display: grid;
@@ -240,13 +248,13 @@ button.appt-card:hover {
 }
 
 .appt-card.st-provisorio {
-  background: var(--bz-surface);
+  background: var(--bz-provisional-bg);
   border: 1.5px dashed var(--ev-color);
   border-left: 5px dashed var(--ev-color);
 }
 
 .appt-card.st-concluido {
-  opacity: 0.78;
+  opacity: var(--bz-completed-opacity);
   background: var(--bz-completed-bg);
 }
 
@@ -481,7 +489,7 @@ button.appt-card:hover {
 .week-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 10px;
+  gap: 11px;
   padding: 16px;
   background: var(--bz-grid-well);
 }
@@ -493,14 +501,15 @@ button.appt-card:hover {
   min-width: 0;
   min-height: 290px;
   padding: 10px;
-  background: var(--bz-surface);
-  border: 1px solid var(--bz-border);
+  background: var(--bz-surface-elevated);
+  border: 1px solid var(--bz-border-strong);
   border-radius: var(--radius-md);
+  box-shadow: var(--bz-highlight-top), var(--shadow-xs);
 }
 
 .week-day-col.is-today {
   border: 2px solid var(--bz-blue);
-  box-shadow: 0 4px 14px rgba(18, 104, 179, 0.16);
+  box-shadow: var(--bz-today-ring), 0 4px 14px rgba(18, 104, 179, 0.16);
 }
 
 .week-day-col.is-sunday {
@@ -603,7 +612,7 @@ button.appt-card:hover {
   text-align: left;
   padding: 7px 8px;
   border-radius: var(--radius-xs);
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--ev-border, var(--bz-border-strong));
   border-left: 4px solid var(--ev-color);
   background: var(--ev-bg);
   color: var(--ev-ink);
@@ -612,13 +621,13 @@ button.appt-card:hover {
 }
 
 .week-ev.st-provisorio {
-  background: var(--bz-surface);
+  background: var(--bz-provisional-bg);
   border-style: dashed;
   border-left-style: dashed;
 }
 
 .week-ev.st-concluido {
-  opacity: 0.72;
+  opacity: var(--bz-completed-opacity);
 }
 
 .week-ev.is-block {
@@ -709,8 +718,8 @@ button.appt-card:hover {
 .month-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
-  padding: 12px 16px 16px;
+  gap: 10px;
+  padding: 14px 16px 16px;
   background: var(--bz-grid-well);
 }
 
@@ -718,8 +727,9 @@ button.appt-card:hover {
   min-height: 112px;
   padding: 8px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--bz-border);
-  background: var(--bz-surface);
+  border: 1px solid var(--bz-border-strong);
+  background: var(--bz-surface-elevated);
+  box-shadow: var(--bz-highlight-top), var(--shadow-xs);
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -736,6 +746,7 @@ button.appt-card:hover {
 .month-cell.is-empty {
   background: transparent;
   border-color: transparent;
+  box-shadow: none;
   pointer-events: none;
 }
 
@@ -746,10 +757,12 @@ button.appt-card:hover {
 
 .month-cell.is-past {
   background: var(--bz-past-bg);
+  box-shadow: none;
 }
 
 .month-cell.is-today {
   border: 2px solid var(--bz-blue);
+  box-shadow: var(--bz-today-ring);
 }
 
 .month-cell.is-selected {
@@ -797,6 +810,7 @@ button.appt-card:hover {
   gap: 4px;
   padding: 3px 6px;
   border-radius: 5px;
+  border: 1px solid var(--ev-border, var(--bz-border));
   border-left: 3px solid var(--ev-color);
   background: var(--ev-bg);
   color: var(--ev-ink);
@@ -808,7 +822,7 @@ button.appt-card:hover {
 }
 
 .month-chip.st-provisorio {
-  background: var(--bz-surface);
+  background: var(--bz-provisional-bg);
   border: 1px dashed var(--ev-color);
   border-left: 3px dashed var(--ev-color);
 }
@@ -1050,8 +1064,8 @@ button.appt-card:hover {
   }
 
   .month-grid {
-    gap: 4px;
-    padding: 8px;
+    gap: 6px;
+    padding: 10px 8px;
   }
 
   .month-cell {
@@ -1076,8 +1090,8 @@ button.appt-card:hover {
     display: grid;
     gap: 10px;
     padding: 14px 12px;
-    background: var(--bz-surface);
-    border-top: 1px solid var(--bz-border);
+    background: var(--bz-surface-elevated);
+    border-top: 1px solid var(--bz-border-strong);
   }
 
   .month-preview-head {

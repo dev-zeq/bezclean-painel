@@ -3,25 +3,103 @@
   --canvas: var(--bz-canvas);
   --surface: var(--bz-surface);
   --surface-alt: var(--bz-surface-alt);
+  --soft: var(--bz-surface-elevated);
   --ink: var(--bz-ink);
   --muted: var(--bz-muted);
+  --navy: var(--bz-navy);
+  --blue: var(--bz-blue);
+  --cyan: var(--bz-cyan);
   --border: var(--bz-border);
   --border-strong: var(--bz-border-strong);
   --success: var(--bz-success);
+  --success-soft: var(--bz-success-soft);
   --warning: var(--bz-warning);
   --warning-soft: var(--bz-warning-soft);
   --danger: var(--bz-danger);
   --danger-soft: var(--bz-danger-soft);
 }
 
-:root[data-theme="dark"] :is(dialog, .modal, .modal-card, .auth-card, .auth-view .brand-login,
-  .service-group, .type-toggle button:not([aria-pressed="true"]), .client-picker-results,
-  .client-picker-results button, .secondary) {
-  background: var(--bz-surface);
+:root[data-theme="dark"] .ev-estofados {
+  --ev: var(--type-estofados);
+  --ev-bg: var(--type-estofados-bg);
+  --ev-ink: var(--type-estofados-ink);
 }
-:root[data-theme="dark"] :is(input, select, textarea) { background: var(--bz-input-bg); }
+:root[data-theme="dark"] .ev-faxina {
+  --ev: var(--type-faxina);
+  --ev-bg: var(--type-faxina-bg);
+  --ev-ink: var(--type-faxina-ink);
+}
+:root[data-theme="dark"] .ev-apartamento {
+  --ev: var(--type-apartamento);
+  --ev-bg: var(--type-apartamento-bg);
+  --ev-ink: var(--type-apartamento-ink);
+}
+:root[data-theme="dark"] .ev-block {
+  --ev: var(--type-bloqueio);
+  --ev-bg: var(--type-bloqueio-bg);
+  --ev-ink: var(--type-bloqueio-ink);
+}
+
+:root[data-theme="dark"] :is(.top, .mobile-tabs) {
+  background: var(--bz-surface);
+  border-color: var(--bz-border-strong);
+}
+:root[data-theme="dark"] .mobile-tab.is-active {
+  background: var(--bz-blue-soft);
+  color: var(--bz-cyan);
+}
+:root[data-theme="dark"] .main-nav a[aria-current] {
+  background: var(--bz-nav-active-bg);
+  color: #fff;
+}
+:root[data-theme="dark"] .toast {
+  background: var(--bz-navy-deep);
+  border: 1px solid var(--bz-border-strong);
+}
+
+:root[data-theme="dark"] .auth-view {
+  background: radial-gradient(circle at 15% 0, var(--bz-cyan-soft), transparent 34%), var(--bz-canvas);
+}
+:root[data-theme="dark"] :is(dialog, .modal, .modal-card, .auth-card, .auth-view .brand-login) {
+  background: var(--bz-surface);
+  border: 1px solid var(--bz-border-strong);
+}
+:root[data-theme="dark"] :is(.service-group, .service-option, .service-chip, .apt-item, .trash-item,
+  .trash-note, .type-toggle button:not([aria-pressed="true"]), .client-picker-results,
+  .client-picker-results button, .secondary, .action-menu summary, .action-list button) {
+  background: var(--bz-surface-elevated);
+  border-color: var(--bz-border-strong);
+  color: var(--bz-ink);
+}
+:root[data-theme="dark"] .service-group summary { color: var(--bz-navy); }
+:root[data-theme="dark"] .service-group summary span {
+  background: var(--bz-cyan-soft);
+  color: var(--bz-cyan);
+  border: 1px solid var(--bz-border-strong);
+}
+:root[data-theme="dark"] .service-option.selected {
+  background: var(--bz-success-soft);
+  border-color: var(--bz-success-border);
+}
+:root[data-theme="dark"] .service-option b { color: var(--bz-navy); }
+:root[data-theme="dark"] .service-option i { color: var(--bz-blue); }
+:root[data-theme="dark"] .service-option.selected i { color: var(--bz-success); }
+:root[data-theme="dark"] :is(input, select, textarea) {
+  background: var(--bz-input-bg);
+  border-color: var(--bz-border-strong);
+  color: var(--bz-ink);
+}
 :root[data-theme="dark"] :is(.secondary, .icon-button, .inline-button) { color: var(--bz-navy); }
 :root[data-theme="dark"] .client-picker-results button:hover { background: var(--bz-blue-soft); }
+:root[data-theme="dark"] .status.agendado { background: var(--bz-surface-alt); color: var(--bz-ink-2); }
+:root[data-theme="dark"] .status.provisorio { background: var(--bz-warning-soft); color: var(--bz-warning); }
+:root[data-theme="dark"] .status.concluido { background: var(--bz-success-soft); color: var(--bz-success); }
+:root[data-theme="dark"] .status.cancelado { background: var(--bz-danger-soft); color: var(--bz-danger); }
+:root[data-theme="dark"] .danger-button {
+  background: var(--bz-danger-soft);
+  border-color: var(--bz-danger-border);
+  color: var(--bz-danger);
+}
 
 #agenda .agenda-actions .theme-toggle-btn { flex: none; }
 #agenda .agenda-actions .desktop-new-btn { margin-left: 4px; }

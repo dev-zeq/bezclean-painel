@@ -8,7 +8,7 @@
   const STORAGE_KEY = "bezclean-agenda-theme";
   const THEME_COLORS = {
     light: "#0B3867",
-    dark: "#081423"
+    dark: "#060709"
   };
 
   let currentTheme = "light";

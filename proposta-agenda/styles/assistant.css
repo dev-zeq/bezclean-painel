@@ -242,7 +242,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: var(--bz-surface-tint);
+  background: var(--bz-grid-well);
 }
 
 .bez-msg {
@@ -277,11 +277,11 @@
 }
 
 .bez-msg.is-assistant .bez-bubble {
-  background: var(--bz-surface);
+  background: var(--bz-surface-elevated);
   color: var(--bz-ink);
-  border: 1px solid var(--bz-border);
+  border: 1px solid var(--bz-border-strong);
   border-bottom-left-radius: 4px;
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--bz-highlight-top), var(--shadow-xs);
 }
 
 .bez-voice-tag {
@@ -318,7 +318,7 @@
   padding: 8px 11px;
   border-radius: 10px;
   border: 1px solid var(--bz-border-strong);
-  background: var(--bz-surface);
+  background: var(--bz-surface-alt);
   color: var(--bz-navy);
   text-align: left;
   font-size: 0.8rem;
