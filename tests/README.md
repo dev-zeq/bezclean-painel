@@ -32,6 +32,8 @@ A prévia local abre com `node tests/agenda-preview.mjs` em [127.0.0.1:8126](htt
 1. Alterne Dia, Semana e Mês e abra o atendimento de teste.
 2. Edite o valor, agende uma faxina num horário ocupado e confira a opção de continuar após o aviso de conflito.
 3. Adicione um bloqueio, abra Apartamentos e restaure o atendimento presente na Lixeira.
-4. Abra o Assistente Bez pelo botão flutuante e pergunte “Quais horários estão livres hoje?” e “Tem atendimento em Itapema hoje?”. Feche e reabra para conferir se as mensagens continuam na conversa.
+4. Abra o Assistente Bez pelo botão flutuante e pergunte “Quais são os atendimentos de hoje?” e “Tem atendimento em Itapema hoje?”. Clique num atendimento para abrir os detalhes. Feche os detalhes e reabra a conversa para conferir se as mensagens continuam disponíveis. Bloqueios e horários livres aparecem como texto.
 5. Alterne o tema e confira a navegação em largura de celular.
 6. No celular, toque no campo da conversa para abrir o teclado. Envie uma pergunta, role as mensagens e confira que o campo e o botão de envio continuam visíveis. Feche para voltar à Agenda.
+
+Com `@electric-sql/pglite` disponível, rode também `node --test supabase/testes/*.test.mjs`. O teste de isolamento usa duas identidades fictícias, aplica a migração de cotas num Postgres local, confirma que cada identidade só recebe seus próprios agendamentos e bloqueios e verifica a reversão. A autenticação e o DeepSeek são simulados nesse teste.

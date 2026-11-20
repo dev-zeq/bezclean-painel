@@ -52,6 +52,8 @@
 #agendaQuestion { margin: 0; font-size: 16px; }
 #agendaAssistantSend:disabled { opacity: .55; cursor: wait; }
 #agendaAssistant #agendaAssistantHelp { margin-top: 8px; color: var(--bz-muted); font-size: .75rem; }
+#agendaAssistant .bez-agenda-results { display: grid; gap: 6px; margin: 8px 0; padding: 0; list-style: none; }
+#agendaAssistant .bez-agenda-result-message:not(:empty) { margin-top: 8px; color: var(--bz-danger); }
 
 #agendaAssistant.is-compact:popover-open {
   display: grid;

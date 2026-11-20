@@ -138,11 +138,12 @@ Se a busca por local vier sem período, use hoje e os seis dias seguintes. Para 
       }
       const [events, blocks] = await Promise.all([
         readRows("agendamentos", intent.mode === "local"
-          ? "inicio_em,fim_em,tipo,status,cidade,bairro,clientes(cidade,bairro)"
-          : "inicio_em,fim_em,tipo,status", { excluido_em: "is.null", status: "neq.cancelado" }),
+          ? "id,inicio_em,fim_em,tipo,status,cidade,bairro,clientes(cidade,bairro)"
+          : intent.mode === "agenda" ? "id,inicio_em,fim_em,tipo,status" : "inicio_em,fim_em,tipo,status",
+        { excluido_em: "is.null", status: "neq.cancelado" }),
         intent.mode === "local" ? [] : readRows("bloqueios_agenda", "inicio_em,fim_em")
       ]);
-      return json({ answer: answerAgenda(intent, events, blocks) }, 200);
+      return json(answerAgenda(intent, events, blocks), 200);
     } catch (error) {
       if (error instanceof RequestError) return json({ error: error.message }, error.status, error.retryAfter);
       // Evita registrar a pergunta, o token ou a resposta do provedor.

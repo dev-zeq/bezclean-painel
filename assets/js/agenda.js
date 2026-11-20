@@ -47,11 +47,14 @@ const airbnbTag = event => Core.isAirbnb(event) ? ' <b class="airbnb-tag">Airbnb
 
 /* ---------- Detalhes ---------- */
 
-async function openDetails(id) {
+async function openDetails(id, { signal, onError = toast } = {}) {
   const user = agendaUserId;
-  const { data, error } = await db.from("agendamentos").select("*,clientes(nome,telefone,endereco),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone,airbnb),agendamento_itens(*)").eq("id", id).single();
-  if (user !== agendaUserId) return;
-  if (error) { toast("Não foi possível abrir o atendimento."); return; }
+  const query = db.from("agendamentos").select("*,clientes(nome,telefone,endereco),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone,airbnb),agendamento_itens(*)")
+    .eq("id", id).is("excluido_em", null);
+  if (signal) query.abortSignal(signal);
+  const { data, error } = await query.single();
+  if (user !== agendaUserId || signal?.aborted) return;
+  if (error || !data) { onError("Não foi possível abrir o atendimento. Ele pode ter sido removido da Agenda."); return; }
   currentAppointment = data;
   const type = Core.typeOf(data), start = new Date(data.inicio_em), contact = data.apartamentos && [data.apartamentos.contato_nome, data.apartamentos.contato_telefone].filter(Boolean).join(" · ");
   $("detailsTitle").textContent = Core.title(data);

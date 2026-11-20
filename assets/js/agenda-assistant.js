@@ -9,6 +9,7 @@ const agendaWelcome = agendaMessages.firstElementChild;
 const agendaControls = [...document.querySelectorAll("#panelView .top, #agenda .agenda-actions, #agenda .agenda-toolbar")];
 const agendaAssistantMobile = window.matchMedia("(max-width: 768px)");
 let agendaAssistantRequest = null;
+let agendaAssistantDetailRequest = null;
 let agendaAssistantFrame = 0;
 
 $("agendaAssistantIcon").innerHTML = BezIcons.get("sparkles");
@@ -96,11 +97,14 @@ agendaAssistant.addEventListener("toggle", event => {
   if (open) {
     fitAgendaAssistant();
     scrollAgendaMessages();
+  } else {
+    agendaAssistantDetailRequest?.abort();
   }
 });
 
 function resetAgendaAssistant() {
   agendaAssistantRequest?.abort();
+  agendaAssistantDetailRequest?.abort();
   agendaAssistantRequest = null;
   agendaAssistantForm.reset();
   agendaAssistantButton.disabled = false;
@@ -114,12 +118,71 @@ function appendAgendaMessage(text, fromUser = false) {
   const speaker = document.createElement("span");
   speaker.className = "sr-only";
   speaker.textContent = fromUser ? "Você" : "Assistente Bez";
-  const bubble = document.createElement("p");
+  const bubble = document.createElement("div");
   bubble.className = "bez-bubble";
   bubble.textContent = text;
   message.append(speaker, bubble);
   agendaMessages.append(message);
   return bubble;
+}
+
+async function openAssistantAppointment(id, button, status) {
+  agendaAssistantDetailRequest?.abort();
+  const request = new AbortController();
+  agendaAssistantDetailRequest = request;
+  button.disabled = true;
+  status.textContent = "";
+  try {
+    await openDetails(id, { signal: request.signal, onError: message => { status.textContent = message; } });
+  } catch {
+    if (!request.signal.aborted) status.textContent = "Não foi possível abrir o atendimento.";
+  } finally {
+    if (agendaAssistantDetailRequest === request) agendaAssistantDetailRequest = null;
+    button.disabled = false;
+  }
+}
+
+function renderAgendaAnswer(bubble, data) {
+  const listing = data?.agenda;
+  if (typeof listing?.period !== "string" || !Array.isArray(listing.entries) || !listing.entries.length) {
+    bubble.textContent = typeof data?.answer === "string" ? data.answer : "Não foi possível concluir a consulta.";
+    return;
+  }
+
+  const period = document.createElement("p");
+  period.textContent = listing.period;
+  const entries = document.createElement("ul");
+  entries.className = "bez-agenda-results";
+  const status = document.createElement("p");
+  status.className = "bez-agenda-result-message";
+  status.setAttribute("role", "status");
+  for (const entry of listing.entries) {
+    if (typeof entry?.label !== "string") continue;
+    const row = document.createElement("li");
+    if (typeof entry.appointmentId === "string" && entry.appointmentId) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "bez-action-card";
+      const label = document.createElement("span");
+      label.textContent = entry.label;
+      const action = document.createElement("span");
+      action.className = "bez-action-cta";
+      action.textContent = "Abrir";
+      button.append(label, action);
+      button.onclick = () => openAssistantAppointment(entry.appointmentId, button, status);
+      row.append(button);
+    } else {
+      row.textContent = entry.label;
+    }
+    entries.append(row);
+  }
+  bubble.replaceChildren(period, entries);
+  if (typeof listing.note === "string" && listing.note) {
+    const note = document.createElement("p");
+    note.textContent = listing.note;
+    bubble.append(note);
+  }
+  bubble.append(status);
 }
 
 agendaAssistantForm.onsubmit = async event => {
@@ -148,7 +211,7 @@ agendaAssistantForm.onsubmit = async event => {
       }
       return;
     }
-    answer.textContent = typeof data?.answer === "string" ? data.answer : "Não foi possível concluir a consulta.";
+    renderAgendaAnswer(answer, data);
   } catch {
     if (!request.signal.aborted) answer.textContent = "O Assistente Bez está indisponível no momento. Tente mais tarde.";
   } finally {

@@ -2,13 +2,14 @@
 
 ## Agenda e Assistente Bez — 20/11/2026
 
+- As listas de agendamentos na conversa abrem os detalhes da Agenda pelo identificador retornado pelo Supabase. Os testes locais passaram em Chromium e WebKit, e o teste com duas contas no Postgres local confirmou o isolamento dos resultados e a proteção das cotas.
 - O Assistente Bez abre pelo botão flutuante no canto direito do computador e no esquerdo do celular. No celular, a conversa ocupa até 86% da tela, com mensagens roláveis e o campo de texto acima do teclado. As mensagens da sessão continuam visíveis ao reabrir.
 - A branch `feat/proposta-agenda-visual` integra as visões de dia, semana e mês da proposta ao Supabase. A Agenda reutiliza as operações do painel para cadastro, edição, conflitos, status, bloqueios, apartamentos e lixeira.
 - O Assistente Bez por texto usa o DeepSeek para interpretar a pergunta. A Edge Function lê a Agenda com o token da sessão e monta a resposta localmente. A revisão por SQL somente leitura confirmou as colunas e o RLS por `owner_id` nas tabelas envolvidas.
 - Na consulta de cobertura, 8 dos 16 atendimentos fora da lixeira e sem cancelamento tinham cidade, e 8 tinham bairro, no próprio agendamento ou no cliente vinculado. A busca informa quando há registros que ficaram de fora por localidade incompleta.
 - Cada consulta aceita até 31 dias e reserva cota antes de chamar o provedor. Limites de desenvolvimento de 5 por minuto e 30 por dia por conta e 200 por dia para o projeto. A migração cria somente a estrutura de cota.
-- A suíte Node, a validação da Edge Function com Deno, a migração em Postgres isolado e os fluxos no navegador com dados fictícios passaram. Ainda falta validar o fluxo hospedado com o DeepSeek e duas contas de teste em um ambiente Supabase isolado.
-- A prévia e o roteiro de ativação estão descritos em [teste da Agenda](tests/README.md) e [implantação do Assistente Bez](supabase/assistente-bez.md). A produção permanece sem deploy desta versão. Voz fica para uma etapa posterior.
+- A suíte Node, a validação da Edge Function com Deno, a migração e a reversão em Postgres isolado e os fluxos no navegador com dados fictícios passaram. A decisão foi seguir sem projeto de homologação. A presença do segredo no projeto e a chamada real ao DeepSeek ainda precisam de validação.
+- A prévia e o roteiro de ativação e reversão estão em [teste da Agenda](tests/README.md) e [implantação do Assistente Bez](supabase/assistente-bez.md). A implantação aguarda confirmação. Voz fica para uma etapa posterior.
 
 Última revisão geral do painel em 06/10/2026.
 

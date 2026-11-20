@@ -85,7 +85,7 @@ export function answerAgenda(intent, events, blocks) {
           (windows.length > 4 ? " (mais " + (windows.length - 4) + ")" : "")
         : "Nenhuma janela de pelo menos 30 minutos");
     });
-    return "Horários livres estimados entre 08h e 18h, sem considerar deslocamentos.\n\n" + lines.join("\n");
+    return { answer: "Horários livres estimados entre 08h e 18h, sem considerar deslocamentos.\n\n" + lines.join("\n") };
   }
   let missingLocality = 0;
   const matching = intent.mode === "local" ? activeEvents.filter(event => {
@@ -102,12 +102,21 @@ export function answerAgenda(intent, events, blocks) {
   }) : activeEvents;
   const localityNote = missingLocality ? "\n\nAtendimentos com localidade incompleta para esta busca: " + missingLocality + "." : "";
   const records = matching.map(event => ({
+    appointmentId: event.id,
     start: event.inicio_em, end: event.fim_em,
     label: [types[event.tipo] || "Atendimento", statuses[event.status]].filter(Boolean).join(" · ")
   })).concat(blocks.map(block => ({ start: block.inicio_em, end: block.fim_em, label: "Bloqueado" })));
   records.sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
-  if (!records.length) return "Nenhum registro encontrado para " + period + "." + localityNote;
-  const lines = records.slice(0, 20).map(record => dayTimes(record.start, record.end) + " · " + record.label);
-  return period + "\n\n" + lines.join("\n") +
-    (records.length > 20 ? "\n\nExibindo 20 de " + records.length + " registros. Consulte um período menor para ver os demais." : "") + localityNote;
+  if (!records.length) return { answer: "Nenhum registro encontrado para " + period + "." + localityNote };
+  const entries = records.slice(0, 20).map(record => ({
+    label: dayTimes(record.start, record.end) + " · " + record.label,
+    ...(record.appointmentId && { appointmentId: record.appointmentId })
+  }));
+  const note = ((records.length > 20
+    ? "\n\nExibindo 20 de " + records.length + " registros. Consulte um período menor para ver os demais."
+    : "") + localityNote).trim();
+  return {
+    answer: [period, entries.map(entry => entry.label).join("\n"), note].filter(Boolean).join("\n\n"),
+    agenda: { period, entries, note }
+  };
 }

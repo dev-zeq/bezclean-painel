@@ -6,10 +6,10 @@ import { createAssistantHandler } from "../supabase/functions/assistente-bez/ind
 const day = "2026-11-23";
 const event = (start, end, extra = {}) => ({ inicio_em: day + "T" + start + ":00-03:00", fim_em: day + "T" + end + ":00-03:00", status: "confirmado", tipo: "estofados", ...extra });
 const events = [
-  event("08:00", "10:00", { clientes: { cidade: "Balneário Camboriú", bairro: "Centro", nome: "Nome privado" } }),
-  event("10:15", "12:30", { cidade: "Itapema" }),
-  event("16:00", "17:00", { status: "cancelado" }),
-  event("17:00", "18:00", { excluido_em: day })
+  event("08:00", "10:00", { id: "atendimento-1", clientes: { cidade: "Balneário Camboriú", bairro: "Centro", nome: "Nome privado" } }),
+  event("10:15", "12:30", { id: "atendimento-2", cidade: "Itapema" }),
+  event("16:00", "17:00", { id: "cancelado", status: "cancelado" }),
+  event("17:00", "18:00", { id: "lixeira", excluido_em: day })
 ];
 const blocks = [event("14:00", "15:00")];
 
@@ -25,17 +25,29 @@ test("valida períodos, limites e formatos de perguntas", () => {
 
 test("disponibilidade respeita bloqueios, cancelamentos, exclusões e duração mínima", () => {
   assert.deepEqual(freeWindows(day, events, blocks), [{ inicio: "12:30", fim: "14:00" }, { inicio: "15:00", fim: "18:00" }]);
-  assert.match(answerAgenda(parseIntent({ modo: "livres", inicio: day, fim: day }), events, blocks), /12:30–14:00, 15:00–18:00/);
+  const result = answerAgenda(parseIntent({ modo: "livres", inicio: day, fim: day }), events, blocks);
+  assert.match(result.answer, /12:30–14:00, 15:00–18:00/);
+  assert.equal(result.agenda, undefined);
 });
 
 test("busca local trata acentos, cidade e bairro e omite identificadores de clientes", () => {
   const intent = parseIntent({ modo: "local", inicio: day, fim: day, cidade: "BALNEARIO CAMBORIU", bairro: "centro" });
-  const answer = answerAgenda(intent, events, []);
-  assert.match(answer, /08:00–10:00/);
-  assert.doesNotMatch(answer, /10:15|Nome privado/);
+  const result = answerAgenda(intent, events, []);
+  assert.match(result.answer, /08:00–10:00/);
+  assert.doesNotMatch(JSON.stringify(result), /10:15|Nome privado/);
+  assert.deepEqual(result.agenda.entries.map(entry => entry.appointmentId), ["atendimento-1"]);
   const incomplete = answerAgenda(intent, [...events, event("18:00", "19:00", { cidade: " " })], []);
-  assert.match(incomplete, /localidade incompleta para esta busca: 1/);
-  assert.doesNotMatch(incomplete, /18:00/);
+  assert.match(incomplete.agenda.note, /localidade incompleta para esta busca: 1/);
+  assert.doesNotMatch(incomplete.answer, /18:00/);
+});
+
+test("lista apenas atendimentos visíveis como ações e mantém bloqueios em texto", () => {
+  const result = answerAgenda(parseIntent({ modo: "agenda", inicio: day, fim: day }), events, blocks);
+  assert.deepEqual(result.agenda.entries, [
+    { label: "23/11/2026 08:00–10:00 · Estofados · confirmado", appointmentId: "atendimento-1" },
+    { label: "23/11/2026 10:15–12:30 · Estofados · confirmado", appointmentId: "atendimento-2" },
+    { label: "23/11/2026 14:00–15:00 · Bloqueado" }
+  ]);
 });
 
 const userId = "a0b713b9-4b00-4bdd-ab2c-8390d2cee1be";
@@ -79,6 +91,15 @@ test("sessão validada, cota reservada e somente a pergunta enviada ao DeepSeek"
   }
   assert.equal(calls[3].url.searchParams.get("excluido_em"), "is.null");
   assert.equal(calls[3].url.searchParams.get("status"), "neq.cancelado");
+});
+
+test("identificadores são selecionados só para listas e ficam fora da chamada ao DeepSeek", async () => {
+  const { calls, ask } = setup({ intent: { modo: "agenda", inicio: day, fim: day } });
+  const result = await ask();
+  assert.equal(result.status, 200);
+  assert.equal((await result.json()).agenda.entries[0].appointmentId, "atendimento-1");
+  assert.match(calls[3].url.searchParams.get("select"), /^id,/);
+  assert.doesNotMatch(calls[2].body, /atendimento-1/);
 });
 
 test("recusa sessão ausente, inválida ou anônima e origem não permitida", async () => {
