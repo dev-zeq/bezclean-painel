@@ -63,7 +63,7 @@ async function openDetails(id, { signal, onError = toast } = {}) {
     "<p><b>" + time(data.inicio_em) + "–" + time(data.fim_em) + "</b> · " + new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "long" }).format(start) + "</p>" +
     (data.apartamentos && data.apartamentos.edificio ? "<p>" + esc(data.apartamentos.edificio) + "</p>" : "") +
     "<p>" + esc(data.descricao_servico) + "</p>" +
-    (data.agendamento_itens.length ? "<ul>" + data.agendamento_itens.map(item => "<li>" + (item.quantidade > 1 ? item.quantidade + "× " : "") + esc(item.nome) + " — " + money(item.valor_total) + "</li>").join("") + "</ul>" : "") +
+    (data.agendamento_itens.length ? "<ul>" + data.agendamento_itens.map(item => "<li>" + (item.quantidade > 1 ? item.quantidade + "× " : "") + esc(item.nome) + " — " + appointmentLineAmount(item, item.valor_total) + "</li>").join("") + "</ul>" : "") +
     (+data.valor ? "<p><b>Total: " + money(data.valor) + "</b></p>" : "") +
     "<p>" + esc(data.endereco || "Endereço não informado") + "</p>" +
     (contact ? "<p>Contato: " + esc(contact) + "</p>" : "") +
@@ -86,6 +86,7 @@ function setAppointmentType(type) {
   $("clientSection").classList.toggle("hidden", appointmentType === "apartamento");
   $("apartmentSection").classList.toggle("hidden", appointmentType !== "apartamento");
   $("servicesSection").classList.toggle("hidden", appointmentType !== "estofados");
+  $("selectedServices").querySelectorAll("input").forEach(input => { input.disabled = appointmentType !== "estofados"; });
   $("cleaningTypeField").classList.toggle("hidden", appointmentType === "estofados");
   $("cleaningTypeOptions").innerHTML = (Core.CLEANING_TYPES[appointmentType] || []).concat(appointmentType === "apartamento" ? [Core.AIRBNB_CLEANING] : []).map(option => '<option value="' + option + '">').join("");
   $("appointmentValueHint").textContent = appointmentType === "estofados" ? "ajustável" : "opcional";
@@ -171,24 +172,24 @@ async function saveAppointment(event) {
 
   const apartment = apartments.find(item => item.id === $("apartmentSelect").value);
   if (type === "apartamento" && !apartment) return fail("Selecione o apartamento.");
-  if (type !== "apartamento" && !$("clientSelect").value && (!$("clientName").value.trim() || !$("clientPhone").value.trim())) return fail("Selecione um cliente ou informe nome e WhatsApp.");
+  const clientId = type === "apartamento" || $("clientSelect").disabled ? null : $("clientSelect").value || null;
+  const newClient = !clientId && type !== "apartamento"
+    ? { nome: $("clientName").value.trim(), telefone: $("clientPhone").value.trim() } : null;
+  if (newClient && (!newClient.nome || !newClient.telefone)) return fail("Selecione um cliente ou informe nome e WhatsApp.");
   if (type === "estofados" && !selectedItems.length) return fail("Adicione ao menos um serviço.");
+  if (type === "estofados" && selectedItems.some(item => !Number.isFinite(item.valor_unitario) || item.valor_unitario < 0)) {
+    return fail("Informe o valor unitário de cada serviço.");
+  }
   const cleaning = $("cleaningType").value.trim();
   if (type !== "estofados" && !cleaning) return fail("Informe o tipo de limpeza.");
 
   button.disabled = true;
   try {
-    let appointmentId = $("appointmentId").value;
+    const editing = Boolean($("appointmentId").value);
+    const appointmentId = $("appointmentId").value || appointmentDraftId;
     let clash = [];
-    try { clash = await Core.findConflicts(db, range.start, range.end, appointmentId || null); } catch (error) { return fail("Não foi possível conferir a disponibilidade. Confira a conexão e tente de novo."); }
+    try { clash = await Core.findConflicts(db, range.start, range.end, appointmentId); } catch (error) { return fail("Não foi possível conferir a disponibilidade. Confira a conexão e tente de novo."); }
     if (clash.length && !(await Manage.confirm({ title: "Conflito de horário", message: Core.conflictMessage(clash), confirmLabel: "Agendar mesmo assim" }))) return;
-
-    let clientId = type === "apartamento" ? null : $("clientSelect").value;
-    if (type !== "apartamento" && !clientId) {
-      const { data, error } = await db.from("clientes").insert({ nome: $("clientName").value.trim(), telefone: $("clientPhone").value.trim(), endereco: address }).select("id").single();
-      if (error) return fail(error.message);
-      clientId = data.id;
-    }
 
     const payload = {
       tipo: type,
@@ -202,21 +203,15 @@ async function saveAppointment(event) {
       observacoes: $("appointmentNotes").value.trim() || null,
       status: $("statusSelect").value
     };
-    const editing = !!appointmentId;
-    if (editing) {
-      const { error } = await db.from("agendamentos").update(payload).eq("id", appointmentId);
-      if (error) return fail(error.message);
-      const { error: removeError } = await db.from("agendamento_itens").delete().eq("agendamento_id", appointmentId);
-      if (removeError) return fail(removeError.message);
-    } else {
-      const { data, error } = await db.from("agendamentos").insert(payload).select("id").single();
-      if (error) return fail(error.message);
-      appointmentId = data.id;
-    }
-    if (type === "estofados") {
-      const { error } = await db.from("agendamento_itens").insert(selectedItems.map(item => ({ agendamento_id: appointmentId, catalogo_preco_id: item.id, nome: item.nome, quantidade: item.quantidade || 1, valor_unitario: item.valor, valor_total: lineTotal(item) })));
-      if (error) return fail(error.message);
-    }
+    const items = type === "estofados" ? selectedItems.map(item => ({
+      catalogo_preco_id: item.id, nome: item.nome, quantidade: item.quantidade,
+      valor_unitario: item.valor_unitario, valor_total: lineTotal(item),
+      valor_original: QuotePicker.crossedOf(item), observacoes: item.observacoes || null
+    })) : [];
+    const { error } = await db.rpc("agendamento_salvar_direto", {
+      p_id: appointmentId, p_edicao: editing, p_agendamento: payload, p_itens: items, p_novo_cliente: newClient
+    });
+    if (error) return fail(error.message);
     $("appointmentDialog").close();
     toast(editing ? "Agendamento atualizado!" : "Agendamento criado com sucesso!");
     loadAgenda();

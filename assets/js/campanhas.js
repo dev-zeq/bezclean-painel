@@ -1,5 +1,5 @@
 'use strict';
-const db=window.supabase.createClient('https://qunaqtxadifmwbmycqum.supabase.co','sb_publishable_iMbIE9yLK6VGMLaEsYFbHA_S42mbd0W');
+const db=panelSupabase;
 const C=window.CampanhasCore,$=id=>document.getElementById(id),esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let campaign=null,clients=[],appointments=[],quotes=[],participants=[],models=[],contacts=[],rows=[],currentId=null,filter='todos',busy=false,loading=false,modelsWarning='';
 const date=value=>new Date(value).toLocaleDateString('pt-BR',{timeZone:'America/Sao_Paulo'});

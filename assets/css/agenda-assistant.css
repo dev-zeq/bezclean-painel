@@ -1,0 +1,56 @@
+#bezAssistantWidget[hidden] { display: none; }
+#bezAssistantWidget .bez-action-card { text-decoration: none; }
+#bezAssistantWidget {
+  --assistant-launcher-bottom: 24px;
+}
+#agendaAssistantLauncher { bottom: var(--assistant-launcher-bottom); }
+#agendaAssistant {
+  --chat-bottom: max(calc(var(--assistant-launcher-bottom) + 64px), calc(var(--chat-keyboard-inset, 0px) + 8px));
+  inset: auto 24px calc(var(--chat-bottom) + var(--chat-panel-shift, 0px)) auto;
+  margin: 0;
+  padding: 0;
+  height: min(460px, var(--chat-space, 100dvh), max(0px, calc(100dvh - var(--chat-bottom) - var(--chat-viewport-top, 0px) - 16px)));
+  max-height: none;
+  color: var(--bz-ink);
+  border: 1px solid var(--bz-border-strong);
+  border-radius: 20px;
+  animation: none;
+}
+#agendaAssistant:not(:popover-open) { display: none; }
+#agendaAssistant h2 { margin: 0; font-size: 1rem; }
+#agendaAssistantClose { width: 44px; height: 44px; }
+#agendaAssistant .bez-messages { overscroll-behavior: contain; }
+#agendaAssistant .bez-bubble { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+#agendaAssistant .bez-bubble p { margin: 0; }
+#agendaAssistant .bez-composer { padding: 10px 12px; }
+#agendaQuestion { margin: 0; font-size: 16px; }
+#agendaAssistantSend:disabled { opacity: .55; cursor: wait; }
+#agendaAssistant #agendaAssistantHelp { margin-top: 8px; color: var(--bz-muted); font-size: .75rem; }
+#agendaAssistant .bez-agenda-results { display: grid; gap: 6px; margin: 8px 0; padding: 0; list-style: none; }
+#agendaAssistant .bez-agenda-result-message:not(:empty) { margin-top: 8px; color: var(--bz-danger); }
+
+#agendaAssistant.is-compact:popover-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+#agendaAssistant.is-compact .bez-head { grid-area: 1 / 2; align-self: start; padding: 0; }
+#agendaAssistant.is-compact .bez-head-left { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+#agendaAssistant.is-compact .bez-messages { grid-area: 1 / 1; padding: 6px 8px; }
+#agendaAssistant.is-compact .bez-composer { grid-area: 2 / 1 / auto / -1; padding: 4px 8px; }
+
+@media (max-width: 768px) {
+  #bezAssistantWidget { --assistant-launcher-bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom, 0px)); }
+  #agendaAssistant {
+    inset: auto 0 var(--chat-keyboard-inset, 0px);
+    width: auto;
+    height: min(86dvh, max(0px, calc(var(--chat-viewport-height, 100dvh) - max(12px, env(safe-area-inset-top, 0px)))));
+    border-radius: 22px 22px 0 0;
+  }
+  #agendaAssistant::backdrop { background: var(--bz-backdrop); }
+  #agendaAssistant .bez-head { padding-inline: max(14px, env(safe-area-inset-left, 0px)) max(14px, env(safe-area-inset-right, 0px)); }
+  #agendaAssistant .bez-composer {
+    padding: 10px max(12px, env(safe-area-inset-right, 0px))
+      max(10px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
+  }
+}

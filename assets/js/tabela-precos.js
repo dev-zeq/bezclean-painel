@@ -1,5 +1,5 @@
 (function () {
-  const db = window.supabase.createClient("https://qunaqtxadifmwbmycqum.supabase.co", "sb_publishable_iMbIE9yLK6VGMLaEsYFbHA_S42mbd0W");
+  const db = panelSupabase;
   const $ = id => document.getElementById(id);
   const core = window.PriceTableCore;
   const categories = { sofa: "Sofás", poltrona: "Poltronas", colchao: "Colchões", cadeiras: "Cadeiras", automotivo: "Automotivo", sofa_modelo: "Adicionais para sofá" };
