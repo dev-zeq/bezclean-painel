@@ -1,0 +1,1094 @@
+/* ==========================================================================
+   Bez Clean — Estilos das Visões (Dia, Semana, Mês) e Estados (Vazio, Load, Erro)
+   ========================================================================== */
+
+/* ==========================================================================
+   VISÃO DE DIA
+   ========================================================================== */
+
+.day-shell {
+  padding: 16px 18px 22px;
+  display: grid;
+  gap: 18px;
+}
+
+/* Mapa visual de ocupação contínua (08h → 18h) */
+.day-timeline-box {
+  background: var(--bz-surface-tint);
+  border: 1px solid var(--bz-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.day-timeline-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.day-timeline-head strong {
+  font-size: 0.88rem;
+  color: var(--bz-navy);
+}
+
+.day-timeline-head span {
+  font-size: 0.78rem;
+  color: var(--bz-muted);
+  font-weight: 600;
+}
+
+.timeline-track {
+  position: relative;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bz-success-soft);
+  border: 1px solid var(--bz-success-border);
+  overflow: hidden;
+}
+
+.timeline-noon-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 40%; /* 12:00 dentro do intervalo 08:00–18:00 (4h de 10h) */
+  width: 2px;
+  background: var(--bz-noon-line);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.timeline-seg {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 7px;
+  background: var(--ev-color, var(--bz-blue));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 7px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  border: 0;
+  z-index: 2;
+  box-shadow: 0 1px 3px rgba(11, 56, 103, 0.18);
+}
+
+.timeline-seg.is-provisional {
+  background: var(--bz-surface);
+  color: var(--ev-ink);
+  border: 1.5px dashed var(--ev-color);
+}
+
+.timeline-seg.is-completed {
+  opacity: 0.7;
+}
+
+.timeline-seg.is-block {
+  background: var(--type-bloqueio-bg);
+  color: var(--type-bloqueio-ink);
+  border: 1px solid var(--bz-warning-border);
+}
+
+.timeline-axis {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--bz-muted);
+}
+
+.timeline-axis .axis-noon {
+  color: var(--bz-navy);
+  font-weight: 800;
+}
+
+/* Faixa de horários livres do dia */
+.free-slots-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--bz-border);
+}
+
+.free-slots-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--bz-success);
+  margin-right: 4px;
+}
+
+.free-slot-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 11px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--bz-success-border);
+  background: var(--bz-surface);
+  color: var(--bz-success);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.free-slot-chip:hover {
+  background: var(--bz-success-soft);
+  border-style: solid;
+}
+
+/* Seções Manhã / Tarde */
+.day-periods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.period-column {
+  border: 1px solid var(--bz-border);
+  border-radius: var(--radius-md);
+  background: var(--bz-surface);
+  overflow: hidden;
+}
+
+.period-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bz-surface-alt);
+  border-bottom: 1px solid var(--bz-border);
+}
+
+.period-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.period-title svg {
+  width: 18px;
+  height: 18px;
+  color: var(--bz-blue);
+}
+
+.period-title h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: var(--bz-navy);
+}
+
+.period-title span {
+  font-size: 0.76rem;
+  color: var(--bz-muted);
+  font-weight: 600;
+}
+
+.period-pill {
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.period-pill.is-free {
+  background: var(--bz-success-soft);
+  color: var(--bz-success);
+}
+
+.period-pill.is-busy {
+  background: var(--bz-blue-soft);
+  color: var(--bz-blue);
+}
+
+.period-list {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+/* Card de Atendimento na Visão de Dia */
+.appt-card {
+  width: 100%;
+  text-align: left;
+  padding: 12px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--bz-border);
+  border-left: 5px solid var(--ev-color, var(--bz-blue));
+  background: var(--ev-bg, var(--bz-surface-alt));
+  display: grid;
+  gap: 7px;
+  transition: transform 0.12s ease, box-shadow 0.14s ease;
+}
+
+button.appt-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.appt-card.st-provisorio {
+  background: var(--bz-surface);
+  border: 1.5px dashed var(--ev-color);
+  border-left: 5px dashed var(--ev-color);
+}
+
+.appt-card.st-concluido {
+  opacity: 0.78;
+  background: var(--bz-completed-bg);
+}
+
+.appt-card.st-cancelado {
+  opacity: 0.65;
+  background: var(--bz-canceled-bg);
+}
+
+.appt-card.st-cancelado .appt-client {
+  text-decoration: line-through;
+}
+
+.appt-card.is-block {
+  border-left-color: var(--type-bloqueio);
+  background-color: var(--type-bloqueio-bg);
+}
+
+.appt-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.appt-time {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--ev-ink, var(--bz-navy));
+}
+
+.appt-badges {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.badge-chip svg {
+  width: 12px;
+  height: 12px;
+}
+
+.badge-type {
+  background: var(--bz-badge-bg);
+  color: var(--ev-ink);
+  border: 1px solid var(--bz-badge-border);
+}
+
+.badge-airbnb {
+  background: var(--type-airbnb-bg);
+  color: var(--type-airbnb);
+  border: 1px solid var(--type-airbnb-border);
+}
+
+.badge-noon-bridge {
+  background: var(--bz-noon-badge-bg);
+  color: var(--bz-navy);
+  border: 1px solid var(--bz-border-strong);
+}
+
+.status-badge {
+  background: var(--bz-surface);
+  color: var(--bz-ink-2);
+  border: 1px solid var(--bz-border);
+}
+
+.status-badge.st-confirmado {
+  background: var(--bz-blue-soft);
+  color: var(--bz-blue);
+  border-color: var(--bz-status-confirmed-border);
+}
+
+.status-badge.st-provisorio {
+  background: var(--bz-warning-soft);
+  color: var(--bz-warning);
+  border-color: var(--bz-warning-border);
+}
+
+.status-badge.st-concluido {
+  background: var(--bz-success-soft);
+  color: var(--bz-success);
+  border-color: var(--bz-success-border);
+}
+
+.status-badge.st-cancelado {
+  background: var(--bz-danger-soft);
+  color: var(--bz-danger);
+  border-color: var(--bz-danger-border);
+}
+
+.appt-card-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.appt-client {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--bz-ink);
+}
+
+.appt-price {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: var(--bz-navy);
+  white-space: nowrap;
+}
+
+.appt-service {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--bz-ink-2);
+}
+
+.appt-meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--bz-muted);
+}
+
+/* Faixa de ocupação herdada do meio-dia na seção da tarde (NÃO é um segundo card!) */
+.noon-carryover {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed var(--bz-border-strong);
+  background: var(--bz-surface-tint);
+  color: var(--bz-ink-2);
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.noon-carryover:hover {
+  background: var(--bz-blue-soft);
+  border-color: var(--bz-blue);
+}
+
+.noon-carryover-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.noon-carryover-tag {
+  flex: none;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bz-carryover-tag-bg);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.noon-carryover-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.noon-carryover-action {
+  flex: none;
+  font-size: 0.74rem;
+  font-weight: 750;
+  color: var(--bz-blue);
+}
+
+/* Linha de intervalo livre dentro do período */
+.free-gap-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: var(--touch-min);
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--bz-success-border);
+  background: var(--bz-success-tint);
+  color: var(--bz-success);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.free-gap-row:hover {
+  background: var(--bz-success-soft);
+  border-style: solid;
+}
+
+.free-gap-cta {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--bz-surface);
+  border: 1px solid var(--bz-success-border);
+  font-size: 0.76rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   VISÃO DE SEMANA
+   ========================================================================== */
+
+.week-mobile-strip {
+  display: none;
+}
+
+.week-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+  padding: 16px;
+  background: var(--bz-grid-well);
+}
+
+.week-day-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 290px;
+  padding: 10px;
+  background: var(--bz-surface);
+  border: 1px solid var(--bz-border);
+  border-radius: var(--radius-md);
+}
+
+.week-day-col.is-today {
+  border: 2px solid var(--bz-blue);
+  box-shadow: 0 4px 14px rgba(18, 104, 179, 0.16);
+}
+
+.week-day-col.is-sunday {
+  background: var(--bz-sunday-bg);
+  border-color: var(--bz-sunday-border);
+}
+
+.week-day-col.is-past {
+  background: var(--bz-past-bg);
+}
+
+.week-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 2px 2px 6px;
+  border: 0;
+  border-bottom: 1px solid var(--bz-border);
+  background: transparent;
+  width: 100%;
+  text-align: left;
+}
+
+.week-day-head-left {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.week-day-head-left span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--bz-muted);
+}
+
+.week-day-head-left b {
+  font-size: 1.15rem;
+  color: var(--bz-navy);
+}
+
+.week-day-col.is-today .week-day-head-left b {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bz-blue);
+  color: #fff;
+  font-size: 0.96rem;
+}
+
+.week-day-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--bz-muted);
+}
+
+/* Mini barra visual de ocupação 08h–18h dentro da coluna da semana */
+.mini-day-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bz-success-soft);
+  border: 1px solid var(--bz-mini-bar-border);
+  overflow: hidden;
+}
+
+.mini-day-bar-noon {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 40%;
+  width: 1px;
+  background: var(--bz-noon-line);
+  z-index: 2;
+}
+
+.mini-day-seg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--ev-color, var(--bz-blue));
+}
+
+.mini-day-seg.is-block {
+  background: var(--type-bloqueio);
+}
+
+.week-events-list {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  align-content: start;
+}
+
+.week-ev {
+  width: 100%;
+  text-align: left;
+  padding: 7px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--bz-border);
+  border-left: 4px solid var(--ev-color);
+  background: var(--ev-bg);
+  color: var(--ev-ink);
+  display: grid;
+  gap: 2px;
+}
+
+.week-ev.st-provisorio {
+  background: var(--bz-surface);
+  border-style: dashed;
+  border-left-style: dashed;
+}
+
+.week-ev.st-concluido {
+  opacity: 0.72;
+}
+
+.week-ev.is-block {
+  border-left-color: var(--type-bloqueio);
+  background: var(--type-bloqueio-bg);
+  color: var(--type-bloqueio-ink);
+}
+
+.week-ev-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--ev-color);
+}
+
+.week-ev-title {
+  font-size: 0.8rem;
+  font-weight: 750;
+  color: var(--bz-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.week-ev-sub {
+  font-size: 0.71rem;
+  color: var(--bz-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.week-noon-tag {
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--bz-week-noon-bg);
+  color: var(--bz-navy);
+}
+
+.week-free-footer {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--bz-border);
+}
+
+.week-free-btn {
+  flex: 1;
+  min-width: 72px;
+  min-height: 32px;
+  padding: 4px 6px;
+  border-radius: 7px;
+  border: 1px dashed var(--bz-success-border);
+  background: var(--bz-success-tint);
+  color: var(--bz-success);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.week-free-btn:hover {
+  background: var(--bz-success-soft);
+}
+
+/* ==========================================================================
+   VISÃO DE MÊS
+   ========================================================================== */
+
+.month-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 16px 8px;
+  background: var(--bz-surface);
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--bz-navy);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+}
+
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 16px 16px;
+  background: var(--bz-grid-well);
+}
+
+.month-cell {
+  min-height: 112px;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--bz-border);
+  background: var(--bz-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.month-cell:hover {
+  border-color: var(--bz-blue);
+  box-shadow: var(--shadow-xs);
+}
+
+.month-cell.is-empty {
+  background: transparent;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.month-cell.is-sunday {
+  background: var(--bz-sunday-bg);
+  border-color: var(--bz-sunday-border);
+}
+
+.month-cell.is-past {
+  background: var(--bz-past-bg);
+}
+
+.month-cell.is-today {
+  border: 2px solid var(--bz-blue);
+}
+
+.month-cell.is-selected {
+  box-shadow: 0 0 0 2px var(--bz-cyan);
+  border-color: var(--bz-navy);
+}
+
+.month-cell-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.month-day-num {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--bz-navy);
+}
+
+.month-cell.is-today .month-day-num {
+  background: var(--bz-blue);
+  color: #fff;
+}
+
+.month-day-total {
+  font-size: 0.68rem;
+  font-weight: 750;
+  color: var(--bz-muted);
+}
+
+.month-events {
+  display: grid;
+  gap: 3px;
+}
+
+.month-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border-left: 3px solid var(--ev-color);
+  background: var(--ev-bg);
+  color: var(--ev-ink);
+  font-size: 0.7rem;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.month-chip.st-provisorio {
+  background: var(--bz-surface);
+  border: 1px dashed var(--ev-color);
+  border-left: 3px dashed var(--ev-color);
+}
+
+.month-chip.is-block {
+  border-left-color: var(--type-bloqueio);
+  background: var(--type-bloqueio-bg);
+  color: var(--type-bloqueio-ink);
+}
+
+.month-more {
+  font-size: 0.69rem;
+  font-weight: 800;
+  color: var(--bz-blue);
+  padding-left: 2px;
+}
+
+.month-preview-panel {
+  display: none;
+}
+
+.month-hint {
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 0.8rem;
+  color: var(--bz-muted);
+  text-align: center;
+  background: var(--bz-surface);
+  border-top: 1px solid var(--bz-border);
+}
+
+/* ==========================================================================
+   ESTADOS: Vazio, Carregando e Erro
+   ========================================================================== */
+
+.state-box {
+  min-height: 330px;
+  padding: 34px 20px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.state-inner {
+  max-width: 420px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.state-illustration {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: var(--bz-cyan-soft);
+  color: var(--bz-blue);
+  margin-bottom: 4px;
+}
+
+.state-illustration.is-error {
+  background: var(--bz-danger-soft);
+  color: var(--bz-danger);
+}
+
+.state-illustration svg {
+  width: 36px;
+  height: 36px;
+}
+
+.state-inner h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--bz-navy);
+}
+
+.state-inner p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--bz-muted);
+}
+
+.state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* Skeletons de carregamento */
+.loading-wrap {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--bz-skel-base);
+  border-radius: var(--radius-sm);
+}
+
+.skel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, var(--bz-skel-shine), transparent);
+  animation: bzShimmer 1.3s infinite;
+}
+
+@keyframes bzShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skel-bar {
+  height: 52px;
+}
+
+.skel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.skel-card {
+  height: 112px;
+}
+
+.kpi-skel {
+  height: 24px;
+  width: 65%;
+}
+
+/* ==========================================================================
+   RESPONSIVO VISÕES (Mobile & Tablet)
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .day-periods {
+    grid-template-columns: 1fr;
+  }
+
+  /* Semana no mobile vira faixa superior de 7 dias + lista confortável vertical */
+  .week-mobile-strip {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+    padding: 10px 12px;
+    background: var(--bz-surface-tint);
+    border-bottom: 1px solid var(--bz-border);
+  }
+
+  .week-strip-btn {
+    min-height: 52px;
+    padding: 5px 2px;
+    border-radius: 10px;
+    border: 1px solid var(--bz-border);
+    background: var(--bz-surface);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+  }
+
+  .week-strip-btn span {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: var(--bz-muted);
+  }
+
+  .week-strip-btn b {
+    font-size: 0.92rem;
+    color: var(--bz-navy);
+  }
+
+  .week-strip-btn.is-today {
+    border-color: var(--bz-blue);
+    background: var(--bz-blue-soft);
+  }
+
+  .week-strip-dots {
+    display: flex;
+    gap: 3px;
+  }
+
+  .week-strip-dots i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--bz-mini-bar-border);
+  }
+
+  .week-strip-dots i.busy {
+    background: var(--bz-blue);
+  }
+
+  .week-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .week-day-col {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .day-shell {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .day-timeline-box {
+    padding: 11px 12px;
+  }
+
+  .period-list {
+    padding: 10px;
+  }
+
+  .skel-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Mês no mobile: células compactas limpas + painel inferior do dia selecionado */
+  .month-weekdays {
+    gap: 4px;
+    padding: 10px 8px 6px;
+    font-size: 0.65rem;
+  }
+
+  .month-grid {
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .month-cell {
+    min-height: 64px;
+    padding: 5px 4px;
+    border-radius: 8px;
+    gap: 4px;
+  }
+
+  .month-day-num {
+    width: 22px;
+    height: 22px;
+    font-size: 0.8rem;
+  }
+
+  .month-day-total,
+  .month-events {
+    display: none;
+  }
+
+  .month-preview-panel {
+    display: grid;
+    gap: 10px;
+    padding: 14px 12px;
+    background: var(--bz-surface);
+    border-top: 1px solid var(--bz-border);
+  }
+
+  .month-preview-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .month-preview-head strong {
+    font-size: 0.96rem;
+    color: var(--bz-navy);
+  }
+}

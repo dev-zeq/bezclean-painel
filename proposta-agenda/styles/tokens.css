@@ -1,0 +1,308 @@
+/* ==========================================================================
+   Bez Clean — Design Tokens (Tema Claro e Tema Escuro)
+   Identidade: Azul Bez Clean, limpeza, confiança, clareza operacional
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Marca Bez Clean */
+  --bz-navy: #0B3867;
+  --bz-navy-deep: #07284B;
+  --bz-blue: #1268B3;
+  --bz-blue-hover: #0E5696;
+  --bz-blue-soft: #E9F3FC;
+  --bz-cyan: #25C2E0;
+  --bz-cyan-soft: #E6F8FC;
+  --bz-nav-active-bg: #0B3867;
+  --bz-carryover-tag-bg: #0B3867;
+  --bz-step-num-bg: #0B3867;
+  --bz-next-grad: linear-gradient(135deg, #0B3867 0%, #12589A 100%);
+  --bz-focus-ring: rgba(18, 104, 179, 0.16);
+
+  /* Superfícies */
+  --bz-canvas: #F4F8FB;
+  --bz-surface: #FFFFFF;
+  --bz-surface-alt: #EFF5FA;
+  --bz-surface-tint: #F8FBFD;
+  --bz-surface-elevated: #FFFFFF;
+  --bz-grid-well: #E8F1F8;
+  --bz-input-bg: #FFFFFF;
+  --bz-border: #D8E4EE;
+  --bz-border-strong: #B8CFE0;
+  --bz-close-hover: #E2EEF7;
+  --bz-backdrop: rgba(7, 40, 75, 0.52);
+
+  /* Estados de células/cards */
+  --bz-sunday-bg: #FCF7F5;
+  --bz-sunday-border: #EAD3CC;
+  --bz-past-bg: #F7FAFC;
+  --bz-completed-bg: #F7FAF9;
+  --bz-canceled-bg: #FAF8F8;
+  --bz-noon-line: rgba(11, 56, 103, 0.28);
+  --bz-noon-badge-bg: #EAF4FC;
+  --bz-week-noon-bg: rgba(11, 56, 103, 0.10);
+
+  /* Textos (Contraste WCAG AA+) */
+  --bz-ink: #102A43;
+  --bz-ink-2: #334E68;
+  --bz-muted: #556E85;
+
+  /* Semântica operacional */
+  --bz-success: #0F7B5F;
+  --bz-success-soft: #E7F6F1;
+  --bz-success-tint: #F6FCF9;
+  --bz-success-border: #9DD6C4;
+  --bz-mini-bar-border: #C6E8DC;
+
+  --bz-warning: #9A5B13;
+  --bz-warning-soft: #FEF6E7;
+  --bz-warning-border: #F2CE88;
+  --bz-warning-ink: #5C3908;
+
+  --bz-danger: #B42318;
+  --bz-danger-soft: #FEF0EE;
+  --bz-danger-hover: #FBDCD8;
+  --bz-danger-border: #F4B9B3;
+  --bz-danger-ink: #7A1A12;
+  --bz-conflict-item-bg: rgba(255, 255, 255, 0.86);
+
+  --bz-whatsapp: #168049;
+  --bz-whatsapp-hover: #11683B;
+  --bz-whatsapp-soft: #E6F7EE;
+
+  /* Tipos de atendimento (sempre usados com ícone + texto, nunca só cor) */
+  --type-estofados: #1268B3;
+  --type-estofados-bg: #EDF5FC;
+  --type-estofados-ink: #0B3867;
+
+  --type-faxina: #0F7B5F;
+  --type-faxina-bg: #EAF7F2;
+  --type-faxina-ink: #0B5541;
+
+  --type-apartamento: #5B4BB7;
+  --type-apartamento-bg: #F2F0FC;
+  --type-apartamento-ink: #3C2F85;
+
+  --type-airbnb: #B32638;
+  --type-airbnb-bg: #FCE9EA;
+  --type-airbnb-border: #F2B9BF;
+
+  --type-bloqueio: #9A5B13;
+  --type-bloqueio-bg: #FDF5E6;
+  --type-bloqueio-ink: #72420B;
+
+  /* Auxiliares de badges, prévia, assistente e loading */
+  --bz-badge-bg: rgba(255, 255, 255, 0.86);
+  --bz-badge-border: rgba(11, 56, 103, 0.12);
+  --bz-status-confirmed-border: #BDD9F2;
+  --bz-preview-existing: #D9E6F2;
+  --bz-preview-existing-border: #B3CBE0;
+  --bz-fab-border: #B7E2F2;
+  --bz-voice-border: #B5D6F2;
+  --bz-skel-base: #E6EFF6;
+  --bz-skel-shine: rgba(255, 255, 255, 0.65);
+
+  /* Tipografia */
+  --bz-font: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Raios e sombras */
+  --radius-xs: 8px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 22px;
+  --radius-pill: 999px;
+
+  --shadow-xs: 0 1px 2px rgba(11, 56, 103, 0.05);
+  --shadow-sm: 0 3px 10px rgba(11, 56, 103, 0.06);
+  --shadow-md: 0 10px 28px rgba(11, 56, 103, 0.10);
+  --shadow-lg: 0 22px 54px rgba(7, 40, 75, 0.22);
+  --shadow-fab: 0 10px 24px rgba(18, 104, 179, 0.34);
+
+  /* Layout e alvos de toque */
+  --touch-min: 44px;
+  --topbar-h: 68px;
+  --tabbar-h: 66px;
+}
+
+/* ==========================================================================
+   TEMA ESCURO — Identidade Azul Bez Clean
+   ========================================================================== */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bz-navy: #E6F2FF;
+  --bz-navy-deep: #050E19;
+  --bz-blue: #3B96E8;
+  --bz-blue-hover: #58AAFA;
+  --bz-blue-soft: #133252;
+  --bz-cyan: #38D1EE;
+  --bz-cyan-soft: #103246;
+  --bz-nav-active-bg: #1A5494;
+  --bz-carryover-tag-bg: #1D5A9A;
+  --bz-step-num-bg: #1E64AC;
+  --bz-next-grad: linear-gradient(135deg, #0D3B6E 0%, #1562AD 100%);
+  --bz-focus-ring: rgba(59, 150, 232, 0.28);
+
+  --bz-canvas: #081423;
+  --bz-surface: #0F2034;
+  --bz-surface-alt: #162B44;
+  --bz-surface-tint: #12263D;
+  --bz-surface-elevated: #1A324E;
+  --bz-grid-well: #0B1A2C;
+  --bz-input-bg: #0D1C2E;
+  --bz-border: #223B58;
+  --bz-border-strong: #33547A;
+  --bz-close-hover: #213D5E;
+  --bz-backdrop: rgba(3, 9, 18, 0.72);
+
+  --bz-sunday-bg: #1D1A29;
+  --bz-sunday-border: #4A3544;
+  --bz-past-bg: #0C1A2A;
+  --bz-completed-bg: #102527;
+  --bz-canceled-bg: #1E1C26;
+  --bz-noon-line: rgba(158, 231, 248, 0.35);
+  --bz-noon-badge-bg: #163657;
+  --bz-week-noon-bg: rgba(56, 209, 238, 0.16);
+
+  --bz-ink: #ECF4FC;
+  --bz-ink-2: #B8CEE4;
+  --bz-muted: #8AA6C1;
+
+  --bz-success: #4CE0B3;
+  --bz-success-soft: #0E332B;
+  --bz-success-tint: #0C2923;
+  --bz-success-border: #236B58;
+  --bz-mini-bar-border: #236B58;
+
+  --bz-warning: #F8C15C;
+  --bz-warning-soft: #332510;
+  --bz-warning-border: #7A5520;
+  --bz-warning-ink: #FDE2A8;
+
+  --bz-danger: #FF7A70;
+  --bz-danger-soft: #3A171A;
+  --bz-danger-hover: #4D1E22;
+  --bz-danger-border: #8F363B;
+  --bz-danger-ink: #FFD4D0;
+  --bz-conflict-item-bg: rgba(15, 32, 52, 0.90);
+
+  --bz-whatsapp: #1E9E5A;
+  --bz-whatsapp-hover: #178048;
+  --bz-whatsapp-soft: #103526;
+
+  --type-estofados: #4DA6FF;
+  --type-estofados-bg: #122D4A;
+  --type-estofados-ink: #CBE5FF;
+
+  --type-faxina: #3DD6A4;
+  --type-faxina-bg: #10322C;
+  --type-faxina-ink: #B8F5E0;
+
+  --type-apartamento: #A392FF;
+  --type-apartamento-bg: #211D42;
+  --type-apartamento-ink: #DFD9FF;
+
+  --type-airbnb: #FF8593;
+  --type-airbnb-bg: #3C1922;
+  --type-airbnb-border: #7D3343;
+
+  --type-bloqueio: #F5B74F;
+  --type-bloqueio-bg: #332510;
+  --type-bloqueio-ink: #FCE0A8;
+
+  --bz-badge-bg: rgba(15, 32, 52, 0.88);
+  --bz-badge-border: rgba(158, 231, 248, 0.20);
+  --bz-status-confirmed-border: #2A5B8F;
+  --bz-preview-existing: #214062;
+  --bz-preview-existing-border: #3B6694;
+  --bz-fab-border: #2C5E8A;
+  --bz-voice-border: #2E5F8F;
+  --bz-skel-base: #162B44;
+  --bz-skel-shine: rgba(56, 209, 238, 0.12);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.62);
+  --shadow-fab: 0 10px 26px rgba(0, 0, 0, 0.50);
+}
+
+/* Garante legibilidade do logotipo no fundo escuro */
+:root[data-theme="dark"] .brand-logo {
+  background: #FFFFFF;
+  padding: 3px;
+}
+
+/* Classes utilitárias de tipo */
+.type-estofados {
+  --ev-color: var(--type-estofados);
+  --ev-bg: var(--type-estofados-bg);
+  --ev-ink: var(--type-estofados-ink);
+}
+
+.type-faxina {
+  --ev-color: var(--type-faxina);
+  --ev-bg: var(--type-faxina-bg);
+  --ev-ink: var(--type-faxina-ink);
+}
+
+.type-apartamento {
+  --ev-color: var(--type-apartamento);
+  --ev-bg: var(--type-apartamento-bg);
+  --ev-ink: var(--type-apartamento-ink);
+}
+
+.type-bloqueio {
+  --ev-color: var(--type-bloqueio);
+  --ev-bg: var(--type-bloqueio-bg);
+  --ev-ink: var(--type-bloqueio-ink);
+}
+
+/* Padrão hachurado discreto para bloqueios (diferenciação sem depender só de cor) */
+.pattern-blocked {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(154, 91, 19, 0.08),
+    rgba(154, 91, 19, 0.08) 8px,
+    rgba(255, 255, 255, 0.35) 8px,
+    rgba(255, 255, 255, 0.35) 16px
+  );
+}
+
+:root[data-theme="dark"] .pattern-blocked {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(245, 183, 79, 0.14),
+    rgba(245, 183, 79, 0.14) 8px,
+    rgba(15, 32, 52, 0.35) 8px,
+    rgba(15, 32, 52, 0.35) 16px
+  );
+}
+
+/* Padrão hachurado para zona de conflito */
+.pattern-conflict {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(180, 35, 24, 0.22),
+    rgba(180, 35, 24, 0.22) 6px,
+    rgba(254, 240, 238, 0.90) 6px,
+    rgba(254, 240, 238, 0.90) 12px
+  );
+}
+
+:root[data-theme="dark"] .pattern-conflict {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 122, 112, 0.34),
+    rgba(255, 122, 112, 0.34) 6px,
+    rgba(58, 23, 26, 0.88) 6px,
+    rgba(58, 23, 26, 0.88) 12px
+  );
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}

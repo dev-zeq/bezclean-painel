@@ -4,7 +4,7 @@
 // As regras (períodos, disponibilidade, conflitos) ficam em agenda-core.js.
 
 const Core = AgendaCore;
-let agendaEvents = [], agendaBlocks = [], apartments = [], appointmentType = "estofados", agendaRequest = 0, conflictTimer = null, keepApartmentId = null;
+let agendaEvents = [], agendaBlocks = [], apartments = [], appointmentType = "estofados", agendaRequest = 0, selectedMonthDay = null, conflictTimer = null, keepApartmentId = null;
 
 /* ---------- Visões ---------- */
 
@@ -16,119 +16,45 @@ function initialAgendaMode() {
 function setAgendaMode(mode) {
   calendarMode = mode;
   try { localStorage.setItem("bz-agenda-modo", mode); } catch (error) {}
-  const period = { month: "do mês", week: "da semana", day: "do dia" }[mode];
-  $("countLabel").textContent = "Atendimentos " + period;
-  $("valueLabel").textContent = "Previsão " + period;
-  [["viewMonthBtn", "month"], ["viewWeekBtn", "week"], ["viewDayBtn", "day"]].forEach(([id, value]) => {
-    $(id).classList.toggle("is-active", mode === value);
-    $(id).setAttribute("aria-pressed", mode === value);
-  });
-  const unit = { month: "mês", week: "semana", day: "dia" }[mode];
-  $("previousDay").setAttribute("aria-label", (mode === "week" ? "Semana" : cap(unit)) + " anterior");
-  $("nextDay").setAttribute("aria-label", mode === "week" ? "Próxima semana" : "Próximo " + unit);
+  selectedMonthDay = dateKey(currentDate);
   loadAgenda();
-}
-
-function rangeTitle(start, end) {
-  const format = options => new Intl.DateTimeFormat("pt-BR", options);
-  if (calendarMode === "month") return cap(format({ month: "long", year: "numeric" }).format(start));
-  if (calendarMode === "day") return cap(format({ weekday: "long", day: "2-digit", month: "long" }).format(start));
-  const last = Core.addDays(end, -1), sameMonth = start.getMonth() === last.getMonth();
-  return start.getDate() + (sameMonth ? "" : " " + format({ month: "short" }).format(start)) + " – " + last.getDate() + " " + format({ month: "short" }).format(last);
 }
 
 async function loadAgenda() {
   const request = ++agendaRequest, { start, end } = Core.viewRange(calendarMode, currentDate);
-  $("selectedDate").textContent = rangeTitle(start, end);
-  const [events, blocks] = await Promise.all([
-    db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,descricao_servico,valor,endereco,clientes(nome,telefone),apartamentos(nome,edificio,airbnb)").is("excluido_em", null).lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em"),
-    db.from("bloqueios_agenda").select("id,inicio_em,fim_em,motivo").lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em")
-  ]);
-  if (request !== agendaRequest) return;
-  if (events.error) { $("agendaContent").innerHTML = '<div class="empty-state"><strong>Não foi possível carregar a agenda.</strong><span>Confira a conexão e tente de novo.</span></div>'; return; }
-  agendaEvents = events.data || [];
-  agendaBlocks = blocks.data || [];
-  renderSummary();
-  renderAgendaView(start);
+  renderAgendaChrome(start, end);
+  renderAgendaContent(start, "loading");
+
+  try {
+    const [events, blocks] = await Promise.all([
+      db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,descricao_servico,valor,endereco,cidade,bairro,clientes(nome,telefone),apartamentos(nome,edificio,airbnb,contato_telefone)").is("excluido_em", null).lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em"),
+      db.from("bloqueios_agenda").select("id,inicio_em,fim_em,motivo").lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em")
+    ]);
+    if (request !== agendaRequest) return;
+    if (events.error || blocks.error) throw Error("Não foi possível carregar a agenda.");
+    agendaEvents = events.data || [];
+    agendaBlocks = blocks.data || [];
+    renderAgendaContent(start);
+  } catch (error) {
+    if (request !== agendaRequest) return;
+    agendaEvents = [];
+    agendaBlocks = [];
+    renderAgendaContent(start, "error");
+  }
 }
 
-function renderSummary() {
-  const active = agendaEvents.filter(Core.isActive), now = new Date();
-  $("todayCount").textContent = active.length;
-  $("todayValue").textContent = money(active.reduce((sum, event) => sum + (+event.valor || 0), 0));
-  const next = active.find(event => new Date(event.inicio_em) > now);
-  const when = next && (calendarMode === "day" ? time(next.inicio_em) : new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" }).format(new Date(next.inicio_em)) + " " + time(next.inicio_em));
-  $("nextAppointment").textContent = next ? when + " · " + Core.title(next).split(" ")[0] : "Livre";
-}
-
-const eventClass = event => "ev-" + Core.typeOf(event) + " st-" + event.status;
 const airbnbTag = event => Core.isAirbnb(event) ? ' <b class="airbnb-tag">Airbnb</b>' : "";
-
-function chip(entry) {
-  if (entry.kind === "block") return '<span class="ev ev-block"><em>' + Core.hhmm(entry.start) + "</em><span>Bloqueado" + (entry.item.motivo ? " · " + esc(entry.item.motivo) : "") + "</span></span>";
-  return '<button type="button" class="ev ' + eventClass(entry.item) + '" data-event="' + entry.item.id + '"><em>' + Core.hhmm(entry.start) + "</em><span>" + esc(Core.title(entry.item)) + airbnbTag(entry.item) + "</span></button>";
-}
-
-function renderAgendaView(start) {
-  const today = dateKey(new Date()), activeEvents = agendaEvents.filter(Core.isActive);
-  const dayClass = date => (date.getDay() === 0 ? "sunday " : "") + (dateKey(date) === today ? "today " : "") + (dateKey(date) < today ? "past " : "");
-  let html = "";
-
-  if (calendarMode === "month") {
-    const year = start.getFullYear(), month = start.getMonth(), days = new Date(year, month + 1, 0).getDate(), first = start.getDay();
-    html = '<div class="month-weekdays"><span>Dom</span><span>Seg</span><span>Ter</span><span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span></div><div class="month-calendar">' + '<div class="month-cell empty"></div>'.repeat(first);
-    for (let day = 1; day <= days; day++) {
-      const date = new Date(year, month, day), buckets = Core.dayBuckets(activeEvents, agendaBlocks, date), spoken = [];
-      const halves = Core.HALVES.map(half => {
-        const entries = buckets[half.id], shown = entries.slice(0, 2), extra = entries.length - shown.length;
-        spoken.push(half.label.toLowerCase() + ": " + (entries.length ? entries.length + " compromisso" + (entries.length > 1 ? "s" : "") : "livre"));
-        return '<span class="half ' + (entries.length ? "busy" : "free") + '"><i>' + half.label[0] + "</i>" + shown.map(entry => entry.kind === "block" ? '<span class="dot ev-block"><em>Bloqueado</em></span>' : '<span class="dot ' + eventClass(entry.item) + '"><em>' + esc(Core.title(entry.item).split(" ")[0]) + "</em></span>").join("") + (extra > 0 ? "<small>+" + extra + "</small>" : "") + "</span>";
-      }).join("");
-      html += '<div role="button" tabindex="0" class="month-cell ' + dayClass(date) + '" data-day="' + dateKey(date) + '" aria-label="Dia ' + day + ", " + spoken.join(", ") + '"><b>' + day + "</b>" + halves + "</div>";
-    }
-    html += '<div class="month-cell empty"></div>'.repeat((7 - (first + days) % 7) % 7) + '</div><p class="month-hint">M = manhã · T = tarde. Toque em um dia para ver os detalhes e agendar.</p>';
-  }
-
-  if (calendarMode === "week") {
-    html = '<div class="week">';
-    for (let index = 0; index < 7; index++) {
-      const date = Core.addDays(start, index), key = dateKey(date), buckets = Core.dayBuckets(activeEvents, agendaBlocks, date);
-      html += '<div class="week-day ' + dayClass(date) + '"><button type="button" class="week-date" data-day="' + key + '" aria-label="Abrir dia ' + date.getDate() + '"><span>' + new Intl.DateTimeFormat("pt-BR", { weekday: "short" }).format(date).replace(".", "") + "</span><b>" + date.getDate() + "</b></button>" +
-        Core.HALVES.map(half => '<div class="week-slot"><small>' + half.label + "</small>" + (buckets[half.id].length ? buckets[half.id].map(chip).join("") : '<button type="button" class="slot-free" data-new="' + key + "|" + half.id + '" aria-label="Agendar ' + half.label.toLowerCase() + " do dia " + date.getDate() + '">+ Livre</button>') + "</div>").join("") + "</div>";
-    }
-    html += "</div>";
-  }
-
-  if (calendarMode === "day") {
-    const key = dateKey(start), buckets = Core.dayBuckets(agendaEvents, agendaBlocks, start);
-    html = '<div class="day-view">' + Core.HALVES.map(half => {
-      const entries = buckets[half.id], free = Core.isFree(entries), busy = entries.filter(entry => entry.kind === "block" || Core.isActive(entry.item)).length;
-      const cards = entries.map(entry => {
-        const range = Core.hhmm(entry.start) + "–" + Core.hhmm(entry.end);
-        if (entry.kind === "block") return '<div class="day-card ev-block"><div class="day-time">' + range + '</div><div><div class="event-title"><span>Horário bloqueado</span></div><p>' + esc(entry.item.motivo || "Indisponível") + "</p></div></div>";
-        const event = entry.item;
-        return '<button type="button" class="day-card ' + eventClass(event) + '" data-event="' + event.id + '"><div class="day-time">' + range + '</div><div><div class="event-title"><span>' + esc(Core.title(event)) + airbnbTag(event) + '</span><span class="status ' + event.status + '">' + (Core.STATUS[event.status] || event.status) + "</span></div><p>" + Core.TYPES[Core.typeOf(event)].short + " · " + esc(event.descricao_servico) + (+event.valor ? " · " + money(event.valor) : "") + "</p></div></button>";
-      }).join("");
-      return '<section class="day-half"><header><h3>' + half.label + '</h3><span class="avail ' + (free ? "free" : "busy") + '">' + (free ? "Livre" : busy + " compromisso" + (busy > 1 ? "s" : "")) + '</span><button type="button" class="secondary" data-new="' + key + "|" + half.id + '">+ Agendar</button></header>' + (cards ? '<div class="day-list">' + cards + "</div>" : '<p class="day-free">Período livre.</p>') + "</section>";
-    }).join("") + "</div>";
-  }
-
-  const box = $("agendaContent");
-  box.innerHTML = html;
-  const openDay = key => { currentDate = new Date(key + "T00:00:00"); setAgendaMode("day"); };
-  box.querySelectorAll("[data-day]").forEach(node => {
-    node.onclick = () => openDay(node.dataset.day);
-    node.onkeydown = event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openDay(node.dataset.day); } };
-  });
-  box.querySelectorAll("[data-new]").forEach(node => node.onclick = () => { const [key, half] = node.dataset.new.split("|"); openNewAppointment(key, half); });
-  box.querySelectorAll("[data-event]").forEach(node => node.onclick = () => openDetails(node.dataset.event));
-}
 
 /* ---------- Detalhes ---------- */
 
-async function openDetails(id) {
-  const { data, error } = await db.from("agendamentos").select("*,clientes(nome,telefone,endereco),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone,airbnb),agendamento_itens(*)").eq("id", id).single();
-  if (error) { toast("Não foi possível abrir o atendimento."); return; }
+async function openDetails(id, { signal, onError = toast } = {}) {
+  const user = agendaUserId;
+  const query = db.from("agendamentos").select("*,clientes(nome,telefone,endereco),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone,airbnb),agendamento_itens(*)")
+    .eq("id", id).is("excluido_em", null);
+  if (signal) query.abortSignal(signal);
+  const { data, error } = await query.single();
+  if (user !== agendaUserId || signal?.aborted) return;
+  if (error || !data) { onError("Não foi possível abrir o atendimento. Ele pode ter sido removido da Agenda."); return; }
   currentAppointment = data;
   const type = Core.typeOf(data), start = new Date(data.inicio_em), contact = data.apartamentos && [data.apartamentos.contato_nome, data.apartamentos.contato_telefone].filter(Boolean).join(" · ");
   $("detailsTitle").textContent = Core.title(data);
@@ -222,10 +148,13 @@ function fillAgendaFields(appointment) {
   scheduleConflictCheck();
 }
 
-function openNewAppointment(key, half) {
+function openNewAppointment(key, startTime, duration) {
   resetForm();
   if (key) $("appointmentDate").value = key;
-  if (half) $("periodSelect").value = half;
+  if (startTime) {
+    $("appointmentTime").value = startTime;
+    $("duration").value = Math.max(30, Math.floor(duration / 30) * 30);
+  }
   updatePeriodFields();
   scheduleConflictCheck();
   $("appointmentDialog").showModal();
@@ -300,8 +229,9 @@ async function saveAppointment(event) {
 const apartmentLabel = apartment => apartment.nome + (apartment.edificio ? " · " + apartment.edificio : "") + (apartment.airbnb ? " · Airbnb" : "");
 
 async function loadApartments() {
+  const user = agendaUserId;
   const { data, error } = await db.from("apartamentos").select("*").order("nome");
-  if (error) return;
+  if (error || user !== agendaUserId) return;
   apartments = data || [];
   renderApartmentOptions();
 }
@@ -356,13 +286,21 @@ async function saveApartment(event) {
 
 /* ---------- Ligações ---------- */
 
-$("viewMonthBtn").onclick = () => calendarMode !== "month" && setAgendaMode("month");
-$("viewWeekBtn").onclick = () => calendarMode !== "week" && setAgendaMode("week");
-$("viewDayBtn").onclick = () => calendarMode !== "day" && setAgendaMode("day");
-$("previousDay").onclick = () => { currentDate = Core.shift(calendarMode, currentDate, -1); loadAgenda(); };
-$("nextDay").onclick = () => { currentDate = Core.shift(calendarMode, currentDate, 1); loadAgenda(); };
-$("todayBtn").onclick = () => { currentDate = new Date(); currentDate.setHours(0, 0, 0, 0); loadAgenda(); };
-$("newAppointmentBtn").onclick = () => openNewAppointment(calendarMode === "day" ? dateKey(currentDate) : null, null);
+initializeAgendaChrome();
+document.querySelectorAll("[data-view-mode]").forEach(button => {
+  button.onclick = () => {
+    if (calendarMode !== button.dataset.viewMode) setAgendaMode(button.dataset.viewMode);
+  };
+});
+function navigateAgenda(date) {
+  currentDate = date;
+  selectedMonthDay = dateKey(date);
+  loadAgenda();
+}
+$("previousDay").onclick = () => navigateAgenda(Core.shift(calendarMode, currentDate, -1));
+$("nextDay").onclick = () => navigateAgenda(Core.shift(calendarMode, currentDate, 1));
+$("todayBtn").onclick = () => navigateAgenda(BezTime.dayStart(new Date()));
+$("newAppointmentBtn").onclick = $("mobileFabBtn").onclick = () => openNewAppointment(selectedAgendaDay());
 $("appointmentForm").onsubmit = saveAppointment;
 document.querySelectorAll("#typeToggle [data-type]").forEach(button => button.onclick = () => setAppointmentType(button.dataset.type));
 $("periodSelect").onchange = () => { updatePeriodFields(); scheduleConflictCheck(); };
@@ -382,4 +320,3 @@ $("confirmBtn").onclick = async () => {
 
 // Início: só depois que tudo acima existe.
 db.auth.onAuthStateChange((_, session) => view(session));
-db.auth.getSession().then(({ data: { session } }) => view(session));
