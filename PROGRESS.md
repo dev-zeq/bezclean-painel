@@ -2,6 +2,7 @@
 
 ## Agenda e Assistente Bez — 20/11/2026
 
+- O Assistente Bez abre pelo botão flutuante no canto direito do computador e no esquerdo do celular. A janela se ajusta ao espaço entre os controles da Agenda, e as mensagens da sessão continuam visíveis ao reabrir.
 - A branch `feat/proposta-agenda-visual` integra as visões de dia, semana e mês da proposta ao Supabase. A Agenda reutiliza as operações do painel para cadastro, edição, conflitos, status, bloqueios, apartamentos e lixeira.
 - O Assistente Bez por texto usa o DeepSeek para interpretar a pergunta. A Edge Function lê a Agenda com o token da sessão e monta a resposta localmente. A revisão por SQL somente leitura confirmou as colunas e o RLS por `owner_id` nas tabelas envolvidas.
 - Na consulta de cobertura, 8 dos 16 atendimentos fora da lixeira e sem cancelamento tinham cidade, e 8 tinham bairro, no próprio agendamento ou no cliente vinculado. A busca informa quando há registros que ficaram de fora por localidade incompleta.

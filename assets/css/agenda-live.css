@@ -26,28 +26,51 @@
 #agenda .agenda-actions .theme-toggle-btn { flex: none; }
 #agenda .agenda-actions .desktop-new-btn { margin-left: 4px; }
 
-.agenda-assistant {
-  margin: 0 0 16px;
-  padding: 0 16px;
-  border: 1px solid var(--bz-border);
-  border-radius: var(--radius-md);
-  background: var(--bz-surface);
+#panelView {
+  --agenda-fab-bottom: 24px;
 }
-.agenda-assistant summary {
-  min-height: 44px;
-  padding: 12px 0;
-  color: var(--bz-navy);
-  font-weight: 800;
-  cursor: pointer;
+#agendaAssistantLauncher { bottom: var(--agenda-fab-bottom); }
+#agendaAssistant {
+  --chat-bottom: max(calc(var(--agenda-fab-bottom) + 64px), calc(var(--chat-keyboard-inset, 0px) + 8px));
+  inset: auto 24px calc(var(--chat-bottom) + var(--chat-panel-shift, 0px)) auto;
+  margin: 0;
+  padding: 0;
+  height: min(460px, var(--chat-space, 100dvh), max(0px, calc(100dvh - var(--chat-bottom) - var(--chat-viewport-top, 0px) - 16px)));
+  max-height: none;
+  color: var(--bz-ink);
+  border: 1px solid var(--bz-border-strong);
+  border-radius: 20px;
+  animation: none;
 }
-.agenda-assistant label { margin-bottom: 6px; }
-.assistant-input-row { display: flex; align-items: center; gap: 8px; }
-.assistant-input-row input { min-width: 0; flex: 1; background: var(--bz-input-bg); }
-.agenda-assistant p { margin: 8px 0 12px; color: var(--bz-muted); font-size: .82rem; }
-#agendaAnswer { white-space: pre-wrap; overflow-wrap: anywhere; }
-#agendaAnswer:not(:empty) { margin: 12px 0 16px; }
+#agendaAssistant:not(:popover-open) { display: none; }
+#agendaAssistant h2 { margin: 0; font-size: 1rem; }
+#agendaAssistantClose { width: 44px; height: 44px; }
+#agendaAssistant .bez-messages { overscroll-behavior: contain; }
+#agendaAssistant .bez-bubble { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+#agendaAssistant .bez-bubble p { margin: 0; }
+#agendaAssistant .bez-composer { padding: 10px 12px; }
+#agendaQuestion { margin: 0; font-size: 16px; }
+#agendaAssistantSend:disabled { opacity: .55; cursor: wait; }
+#agendaAssistant #agendaAssistantHelp { margin-top: 8px; color: var(--bz-muted); font-size: .75rem; }
+
+#agendaAssistant.is-compact:popover-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 44px;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+#agendaAssistant.is-compact .bez-head { grid-area: 1 / 2; align-self: start; padding: 0; }
+#agendaAssistant.is-compact .bez-head-left { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+#agendaAssistant.is-compact .bez-messages { grid-area: 1 / 1; padding: 6px 8px; }
+#agendaAssistant.is-compact .bez-composer { grid-area: 2 / 1 / auto / -1; padding: 4px 8px; }
 
 @media (max-width: 768px) {
+  #panelView { --agenda-fab-bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom, 0px)); }
+  #agendaAssistant {
+    --chat-bottom: max(calc(var(--agenda-fab-bottom) + 56px), calc(var(--chat-keyboard-inset, 0px) + 8px));
+    inset-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px));
+    width: auto;
+    height: min(420px, var(--chat-space, 100dvh), max(0px, calc(100dvh - var(--chat-bottom) - var(--chat-viewport-top, 0px) - 16px)));
+  }
   #agenda .page-heading { flex-wrap: wrap; }
   #agenda .agenda-actions {
     display: flex !important;
@@ -64,6 +87,7 @@
   #agenda .agenda-actions .btn { padding-inline: 10px; }
 }
 @media (min-width: 641px) and (max-width: 768px) {
+  #panelView { --agenda-fab-bottom: 16px; }
   #panelView .mobile-tabs { display: none; }
-  #mobileFabBtn { bottom: 16px; }
+  #mobileFabBtn { bottom: var(--agenda-fab-bottom); }
 }
