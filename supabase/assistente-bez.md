@@ -10,12 +10,12 @@ As consultas aceitam até 400 caracteres, 31 dias e 200 registros por tabela. A 
 
 ## Validação antes da publicação
 
-O Postgres local cobre o isolamento entre duas identidades, as cotas e a reversão. A prévia local cobre o fluxo de abrir detalhes pela conversa. A chamada ao DeepSeek usa um provedor simulado nesses testes. O projeto de produção é `bezclean-painel` (`qunaqtxadifmwbmycqum`). A conferência de catálogo encontrou RLS por `owner_id` e ausência da Edge Function e dos objetos de cota. A presença do segredo `DEEPSEEK_API_KEY` segue pendente de confirmação. Um segredo listado confirma a configuração, e uma resposta autenticada da função confirma seu funcionamento.
+O Postgres local cobre o isolamento entre duas identidades, as cotas e a reversão. A prévia local cobre o fluxo de abrir detalhes pela conversa. A chamada ao DeepSeek usa um provedor simulado nesses testes. O projeto de produção é `bezclean-painel` (`qunaqtxadifmwbmycqum`). A conferência de catálogo encontrou RLS por `owner_id` nas tabelas da Agenda. O segredo `DEEPSEEK_API_KEY` foi encontrado na lista do projeto. Em 20/11/2026, uma consulta autenticada confirmou o funcionamento do DeepSeek e retornou oito agendamentos.
 
 ## Ativação em produção, após aprovação
 
 1. Confirme o nome `DEEPSEEK_API_KEY` na lista de segredos do projeto, sem abrir ou copiar seu valor. Use o segredo existente se estiver configurado.
-2. Aplique a [migração de cota](migrations/20261120211147_assistente_bez_limites.sql) ao projeto `bezclean-painel`. Ela cria o esquema privado `assistente_bez_private`, a tabela `quota` com RLS e a RPC `public.assistente_bez_reservar_consulta(uuid)`, executável por `service_role`. A migração só cria os objetos de cota. As tabelas e políticas da Agenda seguem em uso.
+2. Aplique a [migração de cota](migrations/20261120220241_assistente_bez_limites.sql) ao projeto `bezclean-painel`. Ela cria o esquema privado `assistente_bez_private`, a tabela `quota` com RLS e a RPC `public.assistente_bez_reservar_consulta(uuid)`, executável por `service_role`. A migração só cria os objetos de cota. As tabelas e políticas da Agenda seguem em uso.
 3. Publique a Edge Function `assistente-bez` com `index.ts` e `core.mjs`. A função valida a sessão no Supabase e usa a sessão para ler a Agenda. A chave de servidor autentica somente a reserva de cota. A origem padrão é `https://painel.bezclean.com.br`.
 4. Verifique a recusa sem sessão e execute, com uma conta autorizada, uma consulta por data sem dados pessoais. Confirme a resposta real do DeepSeek e o resultado com os identificadores esperados. Em caso de falha, pause antes de publicar o frontend.
 5. Publique a branch `feat/proposta-agenda-visual` no GitHub Pages via `main`. A versão `20261120d` atualiza a interface da Agenda, a conversa por texto e o cache do PWA. Confira no domínio publicado a abertura de um atendimento pela conversa.

@@ -36,7 +36,7 @@ test("duas contas isoladas e cotas protegidas em Postgres local", async t => {
   const db = new PGlite();
   t.after(() => db.close());
   await db.exec(schema);
-  await db.exec(await readFile(new URL("../migrations/20261120211147_assistente_bez_limites.sql", import.meta.url), "utf8"));
+  await db.exec(await readFile(new URL("../migrations/20261120220241_assistente_bez_limites.sql", import.meta.url), "utf8"));
   for (const [i, owner] of users.entries()) {
     await db.query(
       "insert into agendamentos values ($1, $2, $3, $4, 'faxina', 'confirmado', null)",

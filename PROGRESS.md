@@ -8,8 +8,9 @@
 - O Assistente Bez por texto usa o DeepSeek para interpretar a pergunta. A Edge Function lê a Agenda com o token da sessão e monta a resposta localmente. A revisão por SQL somente leitura confirmou as colunas e o RLS por `owner_id` nas tabelas envolvidas.
 - Na consulta de cobertura, 8 dos 16 atendimentos fora da lixeira e sem cancelamento tinham cidade, e 8 tinham bairro, no próprio agendamento ou no cliente vinculado. A busca informa quando há registros que ficaram de fora por localidade incompleta.
 - Cada consulta aceita até 31 dias e reserva cota antes de chamar o provedor. Limites de desenvolvimento de 5 por minuto e 30 por dia por conta e 200 por dia para o projeto. A migração cria somente a estrutura de cota.
-- A suíte Node, a validação da Edge Function com Deno, a migração e a reversão em Postgres isolado e os fluxos no navegador com dados fictícios passaram. A decisão foi seguir sem projeto de homologação. A presença do segredo no projeto e a chamada real ao DeepSeek ainda precisam de validação.
-- A prévia e o roteiro de ativação e reversão estão em [teste da Agenda](tests/README.md) e [implantação do Assistente Bez](supabase/assistente-bez.md). A implantação aguarda confirmação. Voz fica para uma etapa posterior.
+- A suíte Node, a validação da Edge Function com Deno, a migração e a reversão em Postgres isolado e os fluxos no navegador com dados fictícios passaram. A decisão foi seguir sem projeto de homologação.
+- Após a autorização, a presença do segredo foi confirmada no projeto. A migração registrada como `20261120220241` foi aplicada e a Edge Function `assistente-bez` foi ativada. A função rejeitou chamadas sem sessão, com sessão inválida ou de origem fora do painel. O teste autenticado com o DeepSeek real retornou oito agendamentos no período consultado, antes da publicação do frontend.
+- A prévia e o roteiro de ativação e reversão estão em [teste da Agenda](tests/README.md) e [implantação do Assistente Bez](supabase/assistente-bez.md). Voz fica para uma etapa posterior.
 
 Última revisão geral do painel em 06/10/2026.
 
