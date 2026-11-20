@@ -7,6 +7,7 @@ const agendaQuestion = $("agendaQuestion");
 const agendaMessages = $("agendaMessages");
 const agendaWelcome = agendaMessages.firstElementChild;
 const agendaControls = [...document.querySelectorAll("#panelView .top, #agenda .agenda-actions, #agenda .agenda-toolbar")];
+const agendaAssistantMobile = window.matchMedia("(max-width: 768px)");
 let agendaAssistantRequest = null;
 let agendaAssistantFrame = 0;
 
@@ -20,19 +21,30 @@ function fitAgendaAssistant() {
 
   const viewport = window.visualViewport;
   const top = Math.max(0, viewport?.offsetTop ?? 0);
-  const bottom = Math.max(0, window.innerHeight - (viewport?.height ?? window.innerHeight) - top);
+  const height = viewport?.height ?? window.innerHeight;
+  const bottom = Math.max(0, window.innerHeight - height - top);
+  const nearLatest = agendaMessages.scrollHeight - agendaMessages.clientHeight - agendaMessages.scrollTop <= 8;
   const style = agendaAssistant.style;
   style.setProperty("--chat-keyboard-inset", bottom + "px");
   style.setProperty("--chat-viewport-top", top + "px");
+  style.setProperty("--chat-viewport-height", height + "px");
   style.removeProperty("--chat-panel-shift");
   style.removeProperty("--chat-space");
 
   const panel = agendaAssistant.getBoundingClientRect();
-  const visibleTop = top + 16;
+  const space = agendaAssistantMobile.matches ? null : findAgendaAssistantSpace(panel, top + 16, bottom < 60);
+  if (space) {
+    style.setProperty("--chat-panel-shift", panel.bottom - space.end + "px");
+    style.setProperty("--chat-space", space.height + "px");
+  }
+  agendaAssistant.classList.toggle("is-compact", (space?.height ?? panel.height) < 190);
+  if (nearLatest) scrollAgendaMessages();
+}
+
+function findAgendaAssistantSpace(panel, visibleTop, keepControlsVisible) {
   const slots = [];
-  // Procura espaço entre os controles, começando pela área mais próxima do botão flutuante.
   let start = visibleTop;
-  if (bottom < 60) {
+  if (keepControlsVisible) {
     const controls = agendaControls.map(control => control.getBoundingClientRect())
       .filter(rect => rect.bottom > visibleTop && rect.top < panel.bottom && rect.left < panel.right && rect.right > panel.left)
       .sort((a, b) => a.top - b.top);
@@ -42,13 +54,8 @@ function fitAgendaAssistant() {
     }
   }
   if (panel.bottom > start) slots.push({ end: panel.bottom, height: panel.bottom - start });
-  const space = slots.findLast(slot => slot.height >= 200) ||
+  return slots.findLast(slot => slot.height >= 200) ||
     slots.reduce((largest, slot) => slot.height >= (largest?.height ?? 90) ? slot : largest, null);
-  if (space) {
-    style.setProperty("--chat-panel-shift", panel.bottom - space.end + "px");
-    style.setProperty("--chat-space", space.height + "px");
-  }
-  agendaAssistant.classList.toggle("is-compact", (space?.height ?? panel.height) < 190);
 }
 
 function scheduleAgendaAssistantFit() {
@@ -124,7 +131,7 @@ agendaAssistantForm.onsubmit = async event => {
   agendaAssistantRequest = request;
   appendAgendaMessage(question, true);
   agendaQuestion.value = "";
-  agendaQuestion.focus();
+  agendaQuestion.focus({ preventScroll: true });
   agendaAssistantButton.disabled = true;
   const answer = appendAgendaMessage("Consultando a Agenda…");
   scrollAgendaMessages();

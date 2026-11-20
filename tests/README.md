@@ -34,3 +34,4 @@ A prévia local abre com `node tests/agenda-preview.mjs` em [127.0.0.1:8126](htt
 3. Adicione um bloqueio, abra Apartamentos e restaure o atendimento presente na Lixeira.
 4. Abra o Assistente Bez pelo botão flutuante e pergunte “Quais horários estão livres hoje?” e “Tem atendimento em Itapema hoje?”. Feche e reabra para conferir se as mensagens continuam na conversa.
 5. Alterne o tema e confira a navegação em largura de celular.
+6. No celular, toque no campo da conversa para abrir o teclado. Envie uma pergunta, role as mensagens e confira que o campo e o botão de envio continuam visíveis. Feche para voltar à Agenda.

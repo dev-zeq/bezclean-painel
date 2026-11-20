@@ -66,10 +66,16 @@
 @media (max-width: 768px) {
   #panelView { --agenda-fab-bottom: calc(var(--tabbar-h) + 12px + env(safe-area-inset-bottom, 0px)); }
   #agendaAssistant {
-    --chat-bottom: max(calc(var(--agenda-fab-bottom) + 56px), calc(var(--chat-keyboard-inset, 0px) + 8px));
-    inset-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px));
+    inset: auto 0 var(--chat-keyboard-inset, 0px);
     width: auto;
-    height: min(420px, var(--chat-space, 100dvh), max(0px, calc(100dvh - var(--chat-bottom) - var(--chat-viewport-top, 0px) - 16px)));
+    height: min(86dvh, max(0px, calc(var(--chat-viewport-height, 100dvh) - max(12px, env(safe-area-inset-top, 0px)))));
+    border-radius: 22px 22px 0 0;
+  }
+  #agendaAssistant::backdrop { background: var(--bz-backdrop); }
+  #agendaAssistant .bez-head { padding-inline: max(14px, env(safe-area-inset-left, 0px)) max(14px, env(safe-area-inset-right, 0px)); }
+  #agendaAssistant .bez-composer {
+    padding: 10px max(12px, env(safe-area-inset-right, 0px))
+      max(10px, env(safe-area-inset-bottom, 0px)) max(12px, env(safe-area-inset-left, 0px));
   }
   #agenda .page-heading { flex-wrap: wrap; }
   #agenda .agenda-actions {
