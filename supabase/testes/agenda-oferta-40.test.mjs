@@ -32,7 +32,7 @@ test("Oferta da Agenda é gravada com os itens e respeita o proprietário", asyn
       grant select, insert, update, delete on ${table} to authenticated;
     `);
   }
-  await db.exec(await readFile(new URL("../migrations/20261120221556_agenda_oferta_40.sql", import.meta.url), "utf8"));
+  await db.exec(await readFile(new URL("../migrations/20261120222653_agenda_oferta_40.sql", import.meta.url), "utf8"));
   const owner = "10000000-0000-4000-8000-000000000001";
   const otherOwner = "10000000-0000-4000-8000-000000000002";
   const id = "10000000-0000-4000-8000-000000000010";
