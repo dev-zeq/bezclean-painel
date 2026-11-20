@@ -14,7 +14,7 @@ const sandbox={console,Intl,Date,Map,Set,Promise,Number,String,URL,URLSearchPara
  document:{getElementById:id=>nodes.get(id),addEventListener:(name,fn)=>events['doc:'+name]=fn,visibilityState:'visible'},
  navigator:{userAgent:'Linux',clipboard:{writeText:async text=>{sandbox.copiedMessage=text;}}},location:{href:'',search:''},sessionStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
  addEventListener:(name,fn)=>events[name]=fn};sandbox.window=sandbox;context=vm.createContext(sandbox);
-for(const file of ['assets/js/campanhas-core.js','assets/js/campanhas-modelos.js','tests/mock-supabase.js','assets/js/campanhas.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
+for(const file of ['assets/js/campanhas-core.js','assets/js/campanhas-modelos.js','tests/mock-supabase.js','assets/js/panel-session.js','assets/js/campanhas.js'])vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
 const node=id=>nodes.get(id),expr=s=>vm.runInContext(s,context);
 async function settle(){for(let i=0;i<100;i++){await new Promise(setImmediate);if(!expr('loading||busy'))return;}throw Error('Controller did not settle');}
 async function click(id){await node(id).onclick();await settle();}

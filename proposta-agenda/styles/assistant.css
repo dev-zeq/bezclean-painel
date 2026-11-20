@@ -587,11 +587,11 @@
 
 /* Toast acima do FAB no desktop */
 @media (min-width: 769px) {
-  .toast {
+  body:has(.demo-bar) .toast, body:has(#agenda) .toast {
     bottom: 88px;
   }
 
-  .page {
+  body:has(.demo-bar) .page, #agenda.page {
     padding-bottom: 88px;
   }
 }

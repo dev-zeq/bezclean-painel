@@ -1,5 +1,11 @@
 # Progresso — Painel Bezclean
 
+## Oferta na Agenda e Assistente no painel — 20/11/2026
+
+- O Assistente Bez aparece nas sete páginas com sessão ativa. Em outras páginas, o resultado abre os detalhes na Agenda pelo vínculo do atendimento.
+- A Oferta 40% no agendamento direto usa a preferência de Orçamentos como padrão. O botão do formulário vale para aquele atendimento. O preço digitado é o valor final, e apenas os sofás elegíveis exibem preço riscado.
+- A [migração da Oferta 40%](supabase/migrations/20261120222653_agenda_oferta_40.sql) foi aplicada em produção. Ela acrescenta o preço original aos itens da Agenda e uma função que grava o atendimento e seus itens na mesma transação. A verificação confirmou a regra de preço, o acesso autenticado à função e o RLS das tabelas da Agenda.
+
 ## Agenda e Assistente Bez — 20/11/2026
 
 - As listas de agendamentos na conversa abrem os detalhes da Agenda pelo identificador retornado pelo Supabase. Os testes locais passaram em Chromium e WebKit, e o teste com duas contas no Postgres local confirmou o isolamento dos resultados e a proteção das cotas.

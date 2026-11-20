@@ -28,7 +28,12 @@ const records = {
   ],
   bloqueios_agenda: [{ id: "bloqueio-teste", inicio_em: slot(today, "14:00"), fim_em: slot(today, "15:00"), motivo: "Compromisso de teste" }],
   clientes: [client], apartamentos: [apartment], agendamento_itens: [],
-  catalogo_precos: [{ id: "servico-teste", nome: "Sofá de teste", valor: 120, categoria: "sofa", tipo: "base", ativo: true }]
+  catalogo_precos: [
+    { id: "servico-teste", nome: "Sofá de teste", valor: 120, categoria: "sofa", tipo: "base", ativo: true },
+    { id: "poltrona-teste", nome: "Poltrona de teste", valor: 80, categoria: "poltrona", tipo: "base", ativo: true }
+  ],
+  orcamentos: [], modelos_mensagem: [], campanhas: [], campanha_clientes: [], campanha_contatos: [],
+  promocao_precos: [], catalogo_regras: []
 };
 
 const to64 = value => Buffer.from(JSON.stringify(value)).toString("base64url");
@@ -97,6 +102,22 @@ async function api(request, url) {
     return Response.json("ok");
   }
   if (request.headers.get("authorization") !== "Bearer " + token) return new Response(null, { status: 401 });
+  if (path === "/rest/v1/rpc/agendamento_salvar_direto") {
+    const { p_id, p_edicao, p_agendamento, p_itens, p_novo_cliente } = await request.json();
+    const old = records.agendamentos.find(item => item.id === p_id && !item.excluido_em);
+    if (!p_edicao && old) return Response.json(p_id);
+    if (p_edicao && !old) return Response.json({ message: "Atendimento não encontrado." }, { status: 400 });
+    if (p_novo_cliente && !p_agendamento.cliente_id) {
+      const newClient = { id: randomUUID(), ...p_novo_cliente, endereco: p_agendamento.endereco };
+      records.clientes.push(newClient);
+      p_agendamento.cliente_id = newClient.id;
+    }
+    if (old) Object.assign(old, p_agendamento);
+    else records.agendamentos.push({ id: p_id, ...p_agendamento });
+    records.agendamento_itens = records.agendamento_itens.filter(item => item.agendamento_id !== p_id);
+    records.agendamento_itens.push(...p_itens.map(item => ({ id: randomUUID(), agendamento_id: p_id, ...item })));
+    return Response.json(p_id);
+  }
   if (path === "/rest/v1/rpc/agendamento_excluir" || path === "/rest/v1/rpc/agendamento_restaurar") {
     const { p_id } = await request.json();
     const record = records.agendamentos.find(item => item.id === p_id);
@@ -125,7 +146,7 @@ async function api(request, url) {
 async function staticFile(path) {
   const name = path === "/" ? "/index.html" : path;
   const file = resolve(repo, "." + name);
-  if (!file.startsWith(repo + sep) || !/^\/(index\.html$|(assets|proposta-agenda)\/)/.test(name)) {
+  if (!file.startsWith(repo + sep) || !/^\/((index|clientes|orcamentos|configuracoes|campanhas|mensagens|tabela-precos)\.html$|(assets|proposta-agenda)\/)/.test(name)) {
     return new Response("Prévia local da Agenda", { status: 404 });
   }
   const content = await readFile(file, "utf8");
@@ -137,7 +158,7 @@ async function staticFile(path) {
       .replace('<div class="page" id="agenda">', '<div class="page" id="agenda"><p role="note">Prévia local com dados fictícios. Alterações são descartadas ao reiniciar.</p>');
     if (process.env.BEZ_PREVIEW_SDK) body = body.replace("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2", "/preview-supabase.js");
   }
-  if (name === "/assets/js/app.js") {
+  if (name === "/assets/js/panel-session.js") {
     const rewritten = body.replace(/window\.supabase\.createClient\("[^"]+","[^"]+"\)/, 'window.supabase.createClient(location.origin,"sb_publishable_preview")');
     if (rewritten === body) throw new Error("Configuração da prévia não aplicada");
     body = rewritten;

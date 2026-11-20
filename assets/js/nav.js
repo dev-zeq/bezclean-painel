@@ -48,7 +48,7 @@
   header.after(tabs);
 
   header.querySelector("#signOutBtn").addEventListener("click", async () => {
-    try { await db.auth.signOut(); } catch (error) {
+    try { await panelSupabase.auth.signOut(); } catch (error) {
       // Página sem cliente Supabase carregado: encerra a sessão guardada neste aparelho.
       Object.keys(localStorage).filter(key => /^sb-.*-auth-token$/.test(key)).forEach(key => localStorage.removeItem(key));
     }
