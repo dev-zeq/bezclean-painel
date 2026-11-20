@@ -1,6 +1,6 @@
 /* ==========================================================================
-   Bez Clean — Design Tokens (Tema Claro e Tema Escuro)
-   Identidade: Azul Bez Clean, limpeza, confiança, clareza operacional
+   Bez Clean — Design Tokens (Tema Claro e Tema Escuro com 4 Degraus)
+   Identidade: Azul Bez Clean, limpeza, confiança, separação clara de blocos
    ========================================================================== */
 
 :root {
@@ -32,12 +32,16 @@
   --bz-border-strong: #B8CFE0;
   --bz-close-hover: #E2EEF7;
   --bz-backdrop: rgba(7, 40, 75, 0.52);
+  --bz-highlight-top: none;
+  --bz-today-ring: 0 0 0 0 transparent;
 
   /* Estados de células/cards */
   --bz-sunday-bg: #FCF7F5;
   --bz-sunday-border: #EAD3CC;
   --bz-past-bg: #F7FAFC;
+  --bz-provisional-bg: #FFFFFF;
   --bz-completed-bg: #F7FAF9;
+  --bz-completed-opacity: 0.78;
   --bz-canceled-bg: #FAF8F8;
   --bz-noon-line: rgba(11, 56, 103, 0.28);
   --bz-noon-badge-bg: #EAF4FC;
@@ -75,14 +79,17 @@
   --type-estofados: #1268B3;
   --type-estofados-bg: #EDF5FC;
   --type-estofados-ink: #0B3867;
+  --type-estofados-border: #C4DCF2;
 
   --type-faxina: #0F7B5F;
   --type-faxina-bg: #EAF7F2;
   --type-faxina-ink: #0B5541;
+  --type-faxina-border: #B5E2D3;
 
   --type-apartamento: #5B4BB7;
   --type-apartamento-bg: #F2F0FC;
   --type-apartamento-ink: #3C2F85;
+  --type-apartamento-border: #D4CCF5;
 
   --type-airbnb: #B32638;
   --type-airbnb-bg: #FCE9EA;
@@ -91,6 +98,7 @@
   --type-bloqueio: #9A5B13;
   --type-bloqueio-bg: #FDF5E6;
   --type-bloqueio-ink: #72420B;
+  --type-bloqueio-border: #E8CA8C;
 
   /* Auxiliares de badges, prévia, assistente e loading */
   --bz-badge-bg: rgba(255, 255, 255, 0.86);
@@ -127,107 +135,123 @@
 }
 
 /* ==========================================================================
-   TEMA ESCURO — Identidade Azul Bez Clean
+   TEMA ESCURO — Opção 3: Contraste Alto (OLED) + Destaques Bez Clean
    ========================================================================== */
 
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --bz-navy: #E6F2FF;
-  --bz-navy-deep: #050E19;
-  --bz-blue: #3B96E8;
-  --bz-blue-hover: #58AAFA;
-  --bz-blue-soft: #133252;
+  --bz-navy: #F3F6FA;
+  --bz-navy-deep: #030406;
+  --bz-blue: #3B9EFF;
+  --bz-blue-hover: #60B2FF;
+  --bz-blue-soft: #152D4A;
   --bz-cyan: #38D1EE;
-  --bz-cyan-soft: #103246;
-  --bz-nav-active-bg: #1A5494;
-  --bz-carryover-tag-bg: #1D5A9A;
-  --bz-step-num-bg: #1E64AC;
-  --bz-next-grad: linear-gradient(135deg, #0D3B6E 0%, #1562AD 100%);
-  --bz-focus-ring: rgba(59, 150, 232, 0.28);
+  --bz-cyan-soft: #122E3D;
+  --bz-nav-active-bg: #16569B;
+  --bz-carryover-tag-bg: #195FA8;
+  --bz-step-num-bg: #195FA8;
+  --bz-next-grad: linear-gradient(135deg, #0E4580 0%, #1971C2 100%);
+  --bz-focus-ring: rgba(59, 158, 255, 0.34);
 
-  --bz-canvas: #081423;
-  --bz-surface: #0F2034;
-  --bz-surface-alt: #162B44;
-  --bz-surface-tint: #12263D;
-  --bz-surface-elevated: #1A324E;
-  --bz-grid-well: #0B1A2C;
-  --bz-input-bg: #0D1C2E;
-  --bz-border: #223B58;
-  --bz-border-strong: #33547A;
-  --bz-close-hover: #213D5E;
-  --bz-backdrop: rgba(3, 9, 18, 0.72);
+  /* Degrau 0: Preto profundo OLED e poços das grades */
+  --bz-canvas: #060709;
+  --bz-grid-well: #0A0C10;
+  --bz-past-bg: #0B0E13;
 
-  --bz-sunday-bg: #1D1A29;
-  --bz-sunday-border: #4A3544;
-  --bz-past-bg: #0C1A2A;
-  --bz-completed-bg: #102527;
-  --bz-canceled-bg: #1E1C26;
-  --bz-noon-line: rgba(158, 231, 248, 0.35);
-  --bz-noon-badge-bg: #163657;
-  --bz-week-noon-bg: rgba(56, 209, 238, 0.16);
+  /* Degrau 1: Painéis grandes, molduras, cabeçalhos e modais */
+  --bz-surface: #11141A;
 
-  --bz-ink: #ECF4FC;
-  --bz-ink-2: #B8CEE4;
-  --bz-muted: #8AA6C1;
+  /* Degrau 2: Sub-caixas (Manhã/Tarde, dias da semana/mês, etapas do form) */
+  --bz-surface-elevated: #191D25;
+  --bz-surface-alt: #20252F;
+  --bz-surface-tint: #141820;
+  --bz-input-bg: #0B0D11;
 
-  --bz-success: #4CE0B3;
-  --bz-success-soft: #0E332B;
-  --bz-success-tint: #0C2923;
-  --bz-success-border: #236B58;
-  --bz-mini-bar-border: #236B58;
+  --bz-border: #2C333E;
+  --bz-border-strong: #3F4857;
+  --bz-close-hover: #2A313D;
+  --bz-backdrop: rgba(0, 0, 0, 0.80);
+  --bz-highlight-top: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --bz-today-ring: 0 0 0 1px #38BDF8, 0 0 18px rgba(56, 189, 248, 0.18);
 
-  --bz-warning: #F8C15C;
-  --bz-warning-soft: #332510;
-  --bz-warning-border: #7A5520;
-  --bz-warning-ink: #FDE2A8;
+  /* Células e estados */
+  --bz-sunday-bg: #1D1519;
+  --bz-sunday-border: #5E3F4B;
+  --bz-provisional-bg: #101318;
+  --bz-completed-bg: #111917;
+  --bz-completed-opacity: 0.88;
+  --bz-canceled-bg: #1A1417;
+  --bz-noon-line: rgba(255, 255, 255, 0.28);
+  --bz-noon-badge-bg: #162E4A;
+  --bz-week-noon-bg: rgba(56, 209, 238, 0.18);
 
-  --bz-danger: #FF7A70;
-  --bz-danger-soft: #3A171A;
-  --bz-danger-hover: #4D1E22;
-  --bz-danger-border: #8F363B;
-  --bz-danger-ink: #FFD4D0;
-  --bz-conflict-item-bg: rgba(15, 32, 52, 0.90);
+  --bz-ink: #FFFFFF;
+  --bz-ink-2: #D0D7E2;
+  --bz-muted: #9BA5B5;
 
-  --bz-whatsapp: #1E9E5A;
-  --bz-whatsapp-hover: #178048;
-  --bz-whatsapp-soft: #103526;
+  --bz-success: #4EE8B8;
+  --bz-success-soft: #0F2E26;
+  --bz-success-tint: #0C261F;
+  --bz-success-border: #2E8F72;
+  --bz-mini-bar-border: #2B7D64;
 
-  --type-estofados: #4DA6FF;
-  --type-estofados-bg: #122D4A;
-  --type-estofados-ink: #CBE5FF;
+  --bz-warning: #FBBF24;
+  --bz-warning-soft: #2E220E;
+  --bz-warning-border: #94681E;
+  --bz-warning-ink: #FDE68A;
 
-  --type-faxina: #3DD6A4;
-  --type-faxina-bg: #10322C;
-  --type-faxina-ink: #B8F5E0;
+  --bz-danger: #FF7875;
+  --bz-danger-soft: #331317;
+  --bz-danger-hover: #471B20;
+  --bz-danger-border: #9E3B42;
+  --bz-danger-ink: #FFD6D6;
+  --bz-conflict-item-bg: rgba(17, 20, 26, 0.94);
 
-  --type-apartamento: #A392FF;
-  --type-apartamento-bg: #211D42;
-  --type-apartamento-ink: #DFD9FF;
+  --bz-whatsapp: #1FA35D;
+  --bz-whatsapp-hover: #18854B;
+  --bz-whatsapp-soft: #103324;
 
-  --type-airbnb: #FF8593;
-  --type-airbnb-bg: #3C1922;
-  --type-airbnb-border: #7D3343;
+  /* Degrau 3: Cards limpos com borda e faixa lateral viva */
+  --type-estofados: #38BDF8;
+  --type-estofados-bg: #131922;
+  --type-estofados-ink: #E0F2FE;
+  --type-estofados-border: #2D68A8;
 
-  --type-bloqueio: #F5B74F;
-  --type-bloqueio-bg: #332510;
-  --type-bloqueio-ink: #FCE0A8;
+  --type-faxina: #34D399;
+  --type-faxina-bg: #111A18;
+  --type-faxina-ink: #D1FAE5;
+  --type-faxina-border: #257D61;
 
-  --bz-badge-bg: rgba(15, 32, 52, 0.88);
-  --bz-badge-border: rgba(158, 231, 248, 0.20);
-  --bz-status-confirmed-border: #2A5B8F;
-  --bz-preview-existing: #214062;
-  --bz-preview-existing-border: #3B6694;
-  --bz-fab-border: #2C5E8A;
-  --bz-voice-border: #2E5F8F;
-  --bz-skel-base: #162B44;
-  --bz-skel-shine: rgba(56, 209, 238, 0.12);
+  --type-apartamento: #A78BFA;
+  --type-apartamento-bg: #171522;
+  --type-apartamento-ink: #EDE9FE;
+  --type-apartamento-border: #624AB5;
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
-  --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.62);
-  --shadow-fab: 0 10px 26px rgba(0, 0, 0, 0.50);
+  --type-airbnb: #FB7185;
+  --type-airbnb-bg: #36141D;
+  --type-airbnb-border: #883247;
+
+  --type-bloqueio: #FBBF24;
+  --type-bloqueio-bg: #1B1711;
+  --type-bloqueio-ink: #FEF3C7;
+  --type-bloqueio-border: #92651C;
+
+  --bz-badge-bg: rgba(17, 20, 26, 0.90);
+  --bz-badge-border: rgba(255, 255, 255, 0.16);
+  --bz-status-confirmed-border: #2D68A8;
+  --bz-preview-existing: #272D38;
+  --bz-preview-existing-border: #4A5568;
+  --bz-fab-border: #3B4554;
+  --bz-voice-border: #2C5D94;
+  --bz-skel-base: #191D25;
+  --bz-skel-shine: rgba(255, 255, 255, 0.08);
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.50);
+  --shadow-md: 0 14px 32px rgba(0, 0, 0, 0.60);
+  --shadow-lg: 0 24px 62px rgba(0, 0, 0, 0.78);
+  --shadow-fab: 0 10px 26px rgba(0, 0, 0, 0.65);
 }
 
 /* Garante legibilidade do logotipo no fundo escuro */
@@ -241,24 +265,28 @@
   --ev-color: var(--type-estofados);
   --ev-bg: var(--type-estofados-bg);
   --ev-ink: var(--type-estofados-ink);
+  --ev-border: var(--type-estofados-border);
 }
 
 .type-faxina {
   --ev-color: var(--type-faxina);
   --ev-bg: var(--type-faxina-bg);
   --ev-ink: var(--type-faxina-ink);
+  --ev-border: var(--type-faxina-border);
 }
 
 .type-apartamento {
   --ev-color: var(--type-apartamento);
   --ev-bg: var(--type-apartamento-bg);
   --ev-ink: var(--type-apartamento-ink);
+  --ev-border: var(--type-apartamento-border);
 }
 
 .type-bloqueio {
   --ev-color: var(--type-bloqueio);
   --ev-bg: var(--type-bloqueio-bg);
   --ev-ink: var(--type-bloqueio-ink);
+  --ev-border: var(--type-bloqueio-border);
 }
 
 /* Padrão hachurado discreto para bloqueios (diferenciação sem depender só de cor) */
@@ -275,10 +303,10 @@
 :root[data-theme="dark"] .pattern-blocked {
   background-image: repeating-linear-gradient(
     -45deg,
-    rgba(245, 183, 79, 0.14),
-    rgba(245, 183, 79, 0.14) 8px,
-    rgba(15, 32, 52, 0.35) 8px,
-    rgba(15, 32, 52, 0.35) 16px
+    rgba(251, 191, 36, 0.14),
+    rgba(251, 191, 36, 0.14) 8px,
+    rgba(17, 20, 26, 0.42) 8px,
+    rgba(17, 20, 26, 0.42) 16px
   );
 }
 
@@ -296,10 +324,10 @@
 :root[data-theme="dark"] .pattern-conflict {
   background-image: repeating-linear-gradient(
     -45deg,
-    rgba(255, 122, 112, 0.34),
-    rgba(255, 122, 112, 0.34) 6px,
-    rgba(58, 23, 26, 0.88) 6px,
-    rgba(58, 23, 26, 0.88) 12px
+    rgba(255, 130, 120, 0.36),
+    rgba(255, 130, 120, 0.36) 6px,
+    rgba(63, 25, 29, 0.90) 6px,
+    rgba(63, 25, 29, 0.90) 12px
   );
 }
 
