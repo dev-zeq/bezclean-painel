@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B3867">
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem("bezclean-agenda-theme");
+        var theme = saved === "dark" ? "dark" : "light";
+        document.documentElement.setAttribute("data-theme", theme);
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta && theme === "dark") meta.setAttribute("content", "#081423");
+      } catch (e) {}
+    })();
+  </script>
+  <title>Bez Clean — Proposta Visual da Agenda</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles/tokens.css">
+  <link rel="stylesheet" href="./styles/layout.css">
+  <link rel="stylesheet" href="./styles/views.css">
+  <link rel="stylesheet" href="./styles/overlays.css">
+  <link rel="stylesheet" href="./styles/assistant.css">
+</head>
+<body>
+  <!-- Barra discreta de avaliação da proposta visual (não faz parte do sistema final) -->
+  <aside id="demoBar" class="demo-bar" aria-label="Controles da demonstração visual">
+    <div class="demo-bar-inner">
+      <div class="demo-bar-label">
+        <span class="demo-badge">Proposta Visual</span>
+        <span>Dados fictícios · Simulação interativa</span>
+      </div>
+      <button id="demoToggleBtn" type="button" class="demo-toggle-btn" aria-expanded="false">Cenários e estados</button>
+      <div class="demo-controls">
+        <div class="demo-group" role="group" aria-label="Estado da tela">
+          <button type="button" class="demo-chip is-active" data-demo-state="ready">Com dados</button>
+          <button type="button" class="demo-chip" data-demo-state="empty">Vazia</button>
+          <button type="button" class="demo-chip" data-demo-state="loading">Carregando</button>
+          <button type="button" class="demo-chip" data-demo-state="error">Erro</button>
+        </div>
+        <div class="demo-group" role="group" aria-label="Atalhos de validação">
+          <button type="button" class="demo-chip is-accent" data-demo-action="conflict">Simular conflito</button>
+          <button type="button" class="demo-chip" data-demo-action="details">Detalhes</button>
+          <button type="button" class="demo-chip" data-demo-action="new">Novo</button>
+          <button type="button" class="demo-chip" data-demo-action="edit">Editar</button>
+          <button type="button" class="demo-chip" data-demo-action="block">Bloquear</button>
+          <button type="button" class="demo-chip" data-demo-action="assistant">Assistente Bez</button>
+          <button type="button" class="demo-chip" data-demo-action="reset">Resetar</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Cabeçalho Desktop -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="#agenda" class="brand">
+        <img class="brand-logo" src="https://bezclean.com.br/imagens/LOGO.png" alt="Bez Clean" onerror="this.style.display='none'">
+        <div class="brand-text">
+          <strong>Bez Clean</strong>
+          <small>Painel operacional</small>
+        </div>
+      </a>
+
+      <nav class="main-nav" aria-label="Navegação principal">
+        <a href="#agenda" aria-current="page">Agenda</a>
+        <a href="#clientes" data-stub-nav="Clientes">Clientes</a>
+        <a href="#orcamentos" data-stub-nav="Orçamentos">Orçamentos</a>
+        <a href="#campanhas" data-stub-nav="Campanhas">Campanhas</a>
+        <a href="#mensagens" data-stub-nav="Mensagens">Mensagens</a>
+        <a href="#configuracoes" data-stub-nav="Configurações">Configurações</a>
+      </nav>
+
+      <div class="team-pill" title="Agenda única compartilhada entre a equipe">
+        <span class="team-dot" aria-hidden="true"></span>
+        <span>Equipe: Bruna e Ezequiel</span>
+      </div>
+
+      <span class="topbar-mobile-team">Bruna &amp; Ezequiel</span>
+
+      <button id="themeToggleBtn" type="button" class="theme-toggle-btn" aria-pressed="false" aria-label="Alternar para tema escuro"></button>
+    </div>
+  </header>
+
+  <main class="page" id="agenda">
+    <div class="page-heading">
+      <div>
+        <p class="eyebrow">AGENDA COMPARTILHADA</p>
+        <h1>Agenda</h1>
+        <p class="page-subtitle">Acompanhe atendimentos, horários livres e bloqueios da equipe em tempo real.</p>
+      </div>
+      <div class="heading-actions">
+        <button id="blockTimeBtn" type="button" class="btn btn-secondary btn-block-trigger"></button>
+        <button id="newApptDesktopBtn" type="button" class="btn btn-primary desktop-new-btn"></button>
+      </div>
+    </div>
+
+    <!-- Resumo rápido: quantidade, previsão e próximo atendimento -->
+    <section id="summaryContainer" class="summary-section" aria-label="Resumo do período"></section>
+
+    <!-- Cartão principal da agenda -->
+    <section class="agenda-shell" aria-label="Calendário de atendimentos">
+      <div class="agenda-toolbar">
+        <div class="date-nav">
+          <button id="prevBtn" type="button" class="nav-arrow" aria-label="Período anterior"></button>
+          <div class="date-title-group">
+            <h2 id="rangeTitle" aria-live="polite"></h2>
+            <span id="rangeSub" class="date-title-sub"></span>
+          </div>
+          <button id="nextBtn" type="button" class="nav-arrow" aria-label="Próximo período"></button>
+        </div>
+
+        <div class="toolbar-right">
+          <button id="todayBtn" type="button" class="today-btn">Hoje</button>
+          <div class="view-segmented" role="group" aria-label="Modo de visualização">
+            <button type="button" data-view-mode="day" aria-pressed="true" class="is-active">Dia</button>
+            <button type="button" data-view-mode="week" aria-pressed="false">Semana</button>
+            <button type="button" data-view-mode="month" aria-pressed="false">Mês</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="legendBar" class="agenda-legend" aria-label="Legenda dos atendimentos"></div>
+
+      <div id="agendaContainer" class="agenda-content"></div>
+    </section>
+  </main>
+
+  <!-- Ação flutuante principal no celular -->
+  <button id="mobileFabBtn" type="button" class="mobile-fab" aria-label="Novo agendamento"></button>
+
+  <!-- Barra de navegação inferior no celular -->
+  <nav id="mobileTabBar" class="mobile-tabs" aria-label="Menu inferior"></nav>
+
+  <!-- Botão flutuante e conversa do Assistente Bez -->
+  <div id="bezAssistantRoot"></div>
+
+  <!-- Modais e Drawers -->
+  <dialog id="detailsDialog" class="bz-dialog is-drawer" aria-label="Detalhes do atendimento"></dialog>
+  <dialog id="formDialog" class="bz-dialog" aria-label="Formulário de atendimento"></dialog>
+  <dialog id="blockDialog" class="bz-dialog is-compact" aria-label="Bloquear horário"></dialog>
+  <dialog id="conflictDialog" class="bz-dialog is-compact" aria-label="Conflito de horário"></dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Scripts modulares (padrão sem bundler, compatível com GitHub Pages e futura integração Supabase) -->
+  <script src="./js/time-utils.js"></script>
+  <script src="./js/theme-manager.js"></script>
+  <script src="./js/icons.js"></script>
+  <script src="./js/demo/mock-data.js"></script>
+  <script src="./js/demo/mock-assistant-adapter.js"></script>
+  <script src="./js/components/state-views.js"></script>
+  <script src="./js/components/summary-header.js"></script>
+  <script src="./js/components/day-view.js"></script>
+  <script src="./js/components/week-view.js"></script>
+  <script src="./js/components/month-view.js"></script>
+  <script src="./js/components/conflict-modal.js"></script>
+  <script src="./js/components/details-sheet.js"></script>
+  <script src="./js/components/appointment-form.js"></script>
+  <script src="./js/components/block-form.js"></script>
+  <script src="./js/components/bez-assistant.js"></script>
+  <script src="./js/prototype-app.js"></script>
+</body>
+</html>
