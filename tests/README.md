@@ -22,3 +22,15 @@ Consultas SQL continuam bloqueadas porque o ambiente exige aprovação e a polí
 `node tests/orcamento-seletor.test.cjs`: seletor rápido de itens (atalhos sem preço, soma de quantidade ao repetir o atalho, regra da Oferta 40% só para sofás, ligada/desligada e preferência salva no perfil).
 
 `node tests/orcamento-datas.test.cjs`: datas de criação dos orçamentos no horário de Brasília ("Hoje, 14:30", "Ontem, 09:10", "18/11, 16:45") e o que conta como "feito hoje".
+
+## Agenda e Assistente Bez
+
+Com Node.js 22.18 ou mais recente, rode `node --test tests/*.test.cjs tests/*.test.mjs`. Para validar os tipos da Edge Function, rode `deno check supabase/functions/assistente-bez/index.ts`.
+
+A prévia local abre com `node tests/agenda-preview.mjs` em [127.0.0.1:8126](http://127.0.0.1:8126/). Entre com `teste@example.test` e a senha `agenda-teste`. Os dados são fictícios e as alterações duram até reiniciar o servidor. O teste de navegador usa os componentes reais e uma API local. A interpretação da pergunta e a persistência das cotas são simuladas.
+
+1. Alterne Dia, Semana e Mês e abra o atendimento de teste.
+2. Edite o valor, agende uma faxina num horário ocupado e confira a opção de continuar após o aviso de conflito.
+3. Adicione um bloqueio, abra Apartamentos e restaure o atendimento presente na Lixeira.
+4. Abra Assistente Bez e pergunte “Quais horários estão livres hoje?” e “Tem atendimento em Itapema hoje?”.
+5. Alterne o tema e confira a navegação em largura de celular.

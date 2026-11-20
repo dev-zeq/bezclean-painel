@@ -46,7 +46,9 @@
       const summary = T.computeSummary(p.events || [], p.now);
       const breakdown = [];
       if (summary.confirmedCount) breakdown.push(summary.confirmedCount + " confirmado" + (summary.confirmedCount > 1 ? "s" : ""));
+      if (summary.scheduledCount) breakdown.push(summary.scheduledCount + " agendado" + (summary.scheduledCount > 1 ? "s" : ""));
       if (summary.provisionalCount) breakdown.push(summary.provisionalCount + " a confirmar");
+      if (summary.inProgressCount) breakdown.push(summary.inProgressCount + " em andamento");
       if (summary.completedCount) breakdown.push(summary.completedCount + " concluído" + (summary.completedCount > 1 ? "s" : ""));
 
       const countMeta = breakdown.length ? breakdown.join(" · ") : "Sem atendimentos ativos";
@@ -99,8 +101,8 @@
             "</div>" +
             '<div class="next-main">' +
               '<div class="next-title-btn">' +
-                "<strong>Equipe livre</strong>" +
-                "<span>Nenhum próximo atendimento pendente neste período</span>" +
+                "<strong>Nenhum atendimento pendente</strong>" +
+                "<span>Neste período</span>" +
               "</div>" +
             "</div>" +
           "</article>";

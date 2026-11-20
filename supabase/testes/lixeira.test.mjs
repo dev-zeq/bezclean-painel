@@ -1,6 +1,6 @@
 // Teste do SQL em Postgres local (PGlite), sem tocar no Supabase. Uso: npm i @electric-sql/pglite && node supabase/testes/lixeira.test.mjs
 import {PGlite} from '@electric-sql/pglite';import fs from 'fs';
-const R='/home/zeqmiranda/painel-bezclean/supabase/';
+const R=new URL('../',import.meta.url);
 const db=new PGlite();
 const U1='11111111-1111-1111-1111-111111111111',U2='22222222-2222-2222-2222-222222222222';
 await db.exec(`
@@ -14,7 +14,7 @@ create table orcamento_itens(id uuid primary key default gen_random_uuid(), orca
 create table agendamento_itens(id uuid primary key default gen_random_uuid(), agendamento_id uuid, catalogo_preco_id uuid, nome text, quantidade int, valor_unitario numeric, valor_total numeric, observacoes text);
 create table bloqueios_agenda(id uuid primary key default gen_random_uuid(), owner_id uuid, inicio_em timestamptz, fim_em timestamptz);
 `);
-await db.exec(fs.readFileSync(R+'arquivar_lixeira.sql','utf8'));
+await db.exec(fs.readFileSync(new URL('arquivar_lixeira.sql',R),'utf8'));
 await db.exec('alter table agendamentos alter column owner_id set default auth.uid()');
 let n=0,bad=0;
 const t=async(l,f,expectErr)=>{try{const r=await f();if(expectErr){bad++;console.log('FALHOU (devia dar erro)',l)}else{n++;console.log('OK  ',l,r??'')}}catch(e){if(expectErr&&(!expectErr.test||expectErr.test(e.message))){n++;console.log('OK  ',l,'→ erro esperado:',e.message.slice(0,70))}else{bad++;console.log('ERR ',l,e.message)}}};
@@ -56,10 +56,10 @@ await as(U2);
 await t('outro usuário não enxerga/exclui (owner_id)',()=>db.query(`select orcamento_excluir('${B(4)}')`),/não encontrado/);
 await t('outro usuário não restaura',()=>db.query(`select agendamento_restaurar('${A(3)}')`),/não encontrado/);
 await as(U1);
-await t('migração é reaplicável',async()=>{await db.exec(fs.readFileSync(R+'arquivar_lixeira.sql','utf8'))});
+await t('migração é reaplicável',async()=>{await db.exec(fs.readFileSync(new URL('arquivar_lixeira.sql',R),'utf8'))});
 await t('campanha_agendar_orcamento ignora lixeira no conflito',async()=>{
   await db.exec(`update orcamentos set campanha_cliente_id=gen_random_uuid(), agendamento_id=null where id='${B(4)}'; insert into agendamentos(owner_id,cliente_id,inicio_em,fim_em,status,excluido_em) values('${U1}','c0000000-0000-0000-0000-000000000001','2030-01-01 10:00+00','2030-01-01 12:00+00','agendado',now())`);
   const r=await q(`select campanha_agendar_orcamento('${B(4)}','2030-01-01 10:00+00','2030-01-01 12:00+00') id`); return r[0].id?'agendou':'?'});
-await db.exec(fs.readFileSync(R+'arquivar_lixeira_rollback.sql','utf8'));
+await db.exec(fs.readFileSync(new URL('arquivar_lixeira_rollback.sql',R),'utf8'));
 await t('rollback remove colunas e funções',async()=>JSON.stringify(await q(`select (select count(*)::int from information_schema.columns where column_name in ('excluido_em','arquivado_em','agendamento_excluido_id')) cols,(select count(*)::int from pg_proc where proname in ('orcamento_excluir','agendamento_excluir')) fns`)));
 console.log(n,'ok',bad,'falhas');process.exit(bad?1:0)

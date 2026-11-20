@@ -1,0 +1,5 @@
+project_id = "bezclean-painel"
+
+[functions.assistente-bez]
+# A função valida o token em /auth/v1/user, inclusive com as novas chaves de assinatura.
+verify_jwt = false

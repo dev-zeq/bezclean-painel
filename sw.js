@@ -1,5 +1,5 @@
 // Ao publicar uma versão nova, altere somente esta constante e use o mesmo valor nos links dos HTML.
-const APP_VERSION = "20261119g";
+const APP_VERSION = "20261120a";
 const CACHE_NAME = `bezclean-painel-${APP_VERSION}`;
 const asset = path => `${path}?v=${APP_VERSION}`;
 const APP_SHELL = [
@@ -33,7 +33,21 @@ const APP_SHELL = [
   asset("/assets/js/nav.js"),
   asset("/assets/js/agenda-core.js"),
   asset("/assets/js/agenda.js"),
-  asset("/assets/js/app.js")
+  asset("/assets/js/app.js"),
+  asset("/assets/css/agenda-live.css"),
+  asset("/assets/js/agenda-live.js"),
+  asset("/assets/js/agenda-assistant.js"),
+  asset("/proposta-agenda/styles/tokens.css"),
+  asset("/proposta-agenda/styles/layout.css"),
+  asset("/proposta-agenda/styles/views.css"),
+  asset("/proposta-agenda/js/time-utils.js"),
+  asset("/proposta-agenda/js/theme-manager.js"),
+  asset("/proposta-agenda/js/icons.js"),
+  asset("/proposta-agenda/js/components/state-views.js"),
+  asset("/proposta-agenda/js/components/summary-header.js"),
+  asset("/proposta-agenda/js/components/day-view.js"),
+  asset("/proposta-agenda/js/components/week-view.js"),
+  asset("/proposta-agenda/js/components/month-view.js")
 ];
 
 self.addEventListener("install", event => {

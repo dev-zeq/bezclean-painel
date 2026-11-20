@@ -367,13 +367,17 @@
     let confirmedCount = 0;
     let provisionalCount = 0;
     let completedCount = 0;
+    let scheduledCount = 0;
+    let inProgressCount = 0;
     let totalRevenue = 0;
 
     active.forEach(ev => {
       totalRevenue += Number(ev.valor) || 0;
       if (ev.status === "provisorio") provisionalCount += 1;
       else if (ev.status === "concluido") completedCount += 1;
-      else confirmedCount += 1;
+      else if (ev.status === "agendado") scheduledCount += 1;
+      else if (ev.status === "em_andamento") inProgressCount += 1;
+      else if (ev.status === "confirmado") confirmedCount += 1;
     });
 
     const upcoming = active.filter(ev => ev.status !== "concluido" && new Date(ev.fim_em) > now);
@@ -384,6 +388,8 @@
       confirmedCount: confirmedCount,
       provisionalCount: provisionalCount,
       completedCount: completedCount,
+      scheduledCount: scheduledCount,
+      inProgressCount: inProgressCount,
       totalRevenue: totalRevenue,
       nextEvent: nextEvent
     };
