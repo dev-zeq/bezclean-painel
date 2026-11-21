@@ -161,6 +161,66 @@ function openNewAppointment(key, startTime, duration) {
   $("appointmentDialog").showModal();
 }
 
+function openAppointmentFromDraft(draft) {
+  if (!draft || typeof draft !== "object") return;
+  resetForm();
+  const type = Core.TYPES[draft.tipo] ? draft.tipo : "estofados";
+  setAppointmentType(type);
+
+  if (type === "apartamento") {
+    $("apartmentSelect").value = draft.apartamento_id || "";
+    $("cleaningType").value = draft.descricao_servico || "";
+  } else {
+    if (draft.cliente_id) {
+      keepClientId = draft.cliente_id;
+      renderClientOptions();
+      $("clientSelect").value = draft.cliente_id;
+      toggleNewClient(false);
+    } else if (draft.cliente_nome) {
+      toggleNewClient(true);
+      $("clientName").value = draft.cliente_nome;
+      $("clientPhone").value = draft.cliente_telefone || "";
+    } else {
+      toggleNewClient(false);
+    }
+    if (type === "faxina") $("cleaningType").value = draft.descricao_servico || "";
+  }
+
+  $("appointmentOffer").checked = draft.offer40 !== false;
+  if (type === "estofados" && Array.isArray(draft.items) && draft.items.length) {
+    selectedItems = draft.items.map(item => ({
+      id: item.catalogo_preco_id || null,
+      nome: item.nome || "Serviço",
+      quantidade: Math.max(1, Number(item.quantidade) || 1),
+      valor_unitario: Number.isFinite(item.valor_unitario) ? Number(item.valor_unitario) : NaN,
+      valor_original: item.valor_original ?? null,
+      observacoes: item.observacoes || null
+    }));
+    renderItems(false);
+    renderServiceCatalog();
+  }
+
+  if (draft.data) $("appointmentDate").value = draft.data;
+  $("periodSelect").value = ["manha", "tarde", "dia", "custom"].includes(draft.period) ? draft.period : "custom";
+  if (draft.hora_inicio) $("appointmentTime").value = draft.hora_inicio;
+  if (Number.isFinite(draft.duracao_minutos)) {
+    $("duration").value = Math.max(30, Math.round(draft.duracao_minutos / 30) * 30);
+  }
+  $("statusSelect").value = ["confirmado", "provisorio"].includes(draft.status) ? draft.status : "confirmado";
+  if (Number.isFinite(draft.valor)) {
+    $("appointmentValue").value = Number(draft.valor).toFixed(2);
+  } else if (type === "estofados" && selectedItems.length && selectedItems.every(i => Number.isFinite(i.valor_unitario))) {
+    updateAppointmentTotal();
+  }
+  $("appointmentAddress").value = draft.endereco || "";
+  $("appointmentNotes").value = draft.observacoes || "";
+
+  updatePeriodFields();
+  scheduleConflictCheck();
+  $("appointmentDialog").showModal();
+}
+window.openAppointmentFromDraft = openAppointmentFromDraft;
+
 async function saveAppointment(event) {
   event.preventDefault();
   const button = $("saveAppointmentBtn");
@@ -175,7 +235,7 @@ async function saveAppointment(event) {
   const clientId = type === "apartamento" || $("clientSelect").disabled ? null : $("clientSelect").value || null;
   const newClient = !clientId && type !== "apartamento"
     ? { nome: $("clientName").value.trim(), telefone: $("clientPhone").value.trim() } : null;
-  if (newClient && (!newClient.nome || !newClient.telefone)) return fail("Selecione um cliente ou informe nome e WhatsApp.");
+  if (newClient && !newClient.nome) return fail("Selecione um cliente ou informe o nome do novo cliente.");
   if (type === "estofados" && !selectedItems.length) return fail("Adicione ao menos um serviço.");
   if (type === "estofados" && selectedItems.some(item => !Number.isFinite(item.valor_unitario) || item.valor_unitario < 0)) {
     return fail("Informe o valor unitário de cada serviço.");

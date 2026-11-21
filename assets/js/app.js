@@ -25,20 +25,40 @@ function view(session) {
   $("summaryContainer").replaceChildren();
   document.querySelectorAll("dialog[open]").forEach(dialog => dialog.close());
   if (session) {
-    loadClients();
-    loadServices();
-    loadApartments();
+    const clientsReq = loadClients();
+    const servicesReq = loadServices();
+    const apartmentsReq = loadApartments();
     setAgendaMode(initialAgendaMode());
     const url = new URL(location.href);
     const target = url.searchParams.get("atendimento");
+    const openDraft = url.searchParams.get("rascunho") === "1";
     if (target) {
       url.searchParams.delete("atendimento");
       history.replaceState(null, "", url);
       if (/^[\w-]{1,80}$/.test(target)) openDetails(target);
     }
+    if (openDraft) {
+      url.searchParams.delete("rascunho");
+      history.replaceState(null, "", url);
+      let rawDraft = null;
+      try {
+        rawDraft = sessionStorage.getItem("bez-assistant-draft");
+        sessionStorage.removeItem("bez-assistant-draft");
+      } catch {}
+      if (rawDraft) {
+        Promise.all([clientsReq, servicesReq, apartmentsReq]).then(() => {
+          try {
+            const parsed = JSON.parse(rawDraft);
+            if (parsed && typeof window.openAppointmentFromDraft === "function") {
+              window.openAppointmentFromDraft(parsed);
+            }
+          } catch {}
+        });
+      }
+    }
   }
 }
-async function loadClients(){const user=agendaUserId;const {data,error}=await db.from("clientes").select("id,nome,telefone,endereco,arquivado_em").order("nome");if(error||user!==agendaUserId)return;allClients=data;renderClientOptions()}function renderClientOptions(){const s=$("clientSelect"),old=s.value;s.innerHTML='<option value="">Selecione um cliente</option>'+allClients.filter(x=>!ManageCore.isArchived(x)||x.id===keepClientId).map(x=>`<option value="${x.id}">${esc(x.nome)}${ManageCore.isArchived(x)?" (arquivado)":""} · ${esc(x.telefone)}</option>`).join("");s.value=old}
+async function loadClients(){const user=agendaUserId;const {data,error}=await db.from("clientes").select("id,nome,telefone,endereco,arquivado_em").order("nome");if(error||user!==agendaUserId)return;allClients=data;renderClientOptions()}function renderClientOptions(){const s=$("clientSelect"),old=s.value;s.innerHTML='<option value="">Selecione um cliente</option>'+allClients.filter(x=>!ManageCore.isArchived(x)||x.id===keepClientId).map(x=>`<option value="${x.id}">${esc(x.nome)}${ManageCore.isArchived(x)?" (arquivado)":""}${x.telefone?" · "+esc(x.telefone):""}</option>`).join("");s.value=old}
 async function loadServices(){const user=agendaUserId;const {data,error}=await db.from("catalogo_precos").select("id,nome,valor,categoria,tipo").eq("ativo",true).in("tipo",["base","adicional"]).order("categoria").order("nome");if(error||user!==agendaUserId)return;services=data;renderServiceCatalog()}function renderServiceCatalog(){const term=($("serviceSearch")?.value||"").trim().toLocaleLowerCase("pt-BR"),list=services.filter(x=>x.nome.toLocaleLowerCase("pt-BR").includes(term));const labels={sofa:"Sofás",poltrona:"Poltronas",colchao:"Colchões",cadeiras:"Cadeiras",automotivo:"Automotivo",sofa_modelo:"Adicionais para sofá"};const groups=Object.entries(list.reduce((acc,x)=>{(acc[x.categoria]??=[]).push(x);return acc},{}));$("serviceCatalog").innerHTML=groups.length?groups.map(([cat,items])=>`<details class="service-group" ${term||cat==="sofa"?"open":""}><summary>${labels[cat]||cat} <span>${items.length}</span></summary><div class="service-options">${items.map(x=>`<button class="service-option ${selectedItems.some(i=>i.id===x.id)?"selected":""}" data-service-id="${x.id}" type="button"><span>${esc(x.nome)}</span><b>${money(x.valor)}</b><i>${selectedItems.some(i=>i.id===x.id)?"Adicionado":"+ Adicionar"}</i></button>`).join("")}</div></details>`).join(""):'<p class="hint">Nenhum serviço encontrado.</p>';$("serviceCatalog").querySelectorAll("[data-service-id]").forEach(btn=>btn.onclick=()=>{const item=services.find(x=>x.id===btn.dataset.serviceId);if(item&&!selectedItems.some(x=>x.id===item.id)){const row = { ...item, valor_unitario: Number(item.valor || 0), quantidade: 1 }; applyAppointmentOffer(row); selectedItems.push(row);renderItems();renderServiceCatalog()}})}
 function applyAppointmentOffer(item) {
   QuotePicker.priceItem(item, $("appointmentOffer").checked);
