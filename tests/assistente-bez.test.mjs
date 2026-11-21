@@ -165,7 +165,8 @@ test("valida textos longos de agendamento com telefone e cabeçalhos de áudio W
 
 test("buildBookingDraft vincula catálogo, Oferta 40%, conflitos e nunca inventa preços", () => {
   const catalog = [
-    { id: "cat-sofa3", nome: "Sofá 3 lugares", valor: 199, categoria: "sofa", tipo: "base" },
+    { id: "cat-sofa3", nome: "Sofá 3 módulos", valor: 199, categoria: "sofa", tipo: "base" },
+    { id: "cat-sofa2-antigo", nome: "Sofá 2 lugares", valor: 399, categoria: "sofa", tipo: "base" },
     { id: "cat-cad", nome: "Cadeira", valor: 30, categoria: "cadeiras", tipo: "base" }
   ];
   const clients = [
@@ -183,7 +184,7 @@ test("buildBookingDraft vincula catálogo, Oferta 40%, conflitos e nunca inventa
       cliente_nome: "Ana Beatriz",
       endereco: "Rua 230, 120, Meia Praia",
       itens: [
-        { nome: "Sofá de 3 lugares", quantidade: 1 },
+        { nome: "Sofá de 3 modos", quantidade: 1 },
         { nome: "Cadeiras", quantidade: 4 }
       ]
     }
@@ -193,12 +194,42 @@ test("buildBookingDraft vincula catálogo, Oferta 40%, conflitos e nunca inventa
   assert.deepEqual(newDraft.bookingDraft.newClient, { nome: "Ana Beatriz", telefone: "" });
   assert.equal(newDraft.bookingDraft.canConfirm, true);
   assert.equal(newDraft.bookingDraft.items[0].catalogo_preco_id, "cat-sofa3");
+  assert.equal(newDraft.bookingDraft.items[0].nome, "Sofá 3 módulos");
   assert.equal(newDraft.bookingDraft.items[0].valor_unitario, 199);
   assert.equal(newDraft.bookingDraft.items[0].valor_original, 331.67);
   assert.equal(newDraft.bookingDraft.items[1].catalogo_preco_id, "cat-cad");
   assert.equal(newDraft.bookingDraft.items[1].valor_total, 120);
   assert.equal(newDraft.bookingDraft.valor, 319);
   assert.equal(newDraft.bookingDraft.conflicts.length, 0);
+
+  // "Sofá 2 módulos" não deve cruzar para "Sofá 2 lugares" antigo (R$ 399) quando não há item de módulos no catálogo
+  const modulesDraft = buildBookingDraft(parseIntent({
+    modo: "agendar",
+    agendamento: {
+      data: day,
+      hora_inicio: "15:00",
+      cliente_nome: "Ana Beatriz",
+      itens: [{ nome: "Sofá 2 módulos", quantidade: 1 }]
+    }
+  }), { clients, catalog, events, blocks, offer40: true });
+  assert.equal(modulesDraft.bookingDraft.items[0].catalogo_preco_id, null);
+  assert.equal(modulesDraft.bookingDraft.items[0].nome, "Sofá 2 módulos");
+  assert.equal(modulesDraft.bookingDraft.items[0].valor_unitario, null);
+  assert.equal(modulesDraft.bookingDraft.hasMissingPrices, true);
+
+  // Quando o valor é falado ("Sofá 2 módulos por 198"), calcula riscado pela fórmula de orçamento: 198 / 0.60 = 330.00
+  const spokenPriceDraft = buildBookingDraft(parseIntent({
+    modo: "agendar",
+    agendamento: {
+      data: day,
+      hora_inicio: "15:00",
+      cliente_nome: "Ana Beatriz",
+      itens: [{ nome: "Sofá 2 módulos", quantidade: 1, valor_unitario: 198 }]
+    }
+  }), { clients, catalog, events, blocks, offer40: true });
+  assert.equal(spokenPriceDraft.bookingDraft.items[0].valor_unitario, 198);
+  assert.equal(spokenPriceDraft.bookingDraft.items[0].valor_original, 330);
+  assert.equal(spokenPriceDraft.bookingDraft.valor, 198);
 
   // Item fora do catálogo não recebe preço inventado e detecta conflito com evento/bloqueio
   const partialDraft = buildBookingDraft(parseIntent({

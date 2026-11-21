@@ -96,7 +96,8 @@ const reserved = createAssistantHandler(
       const clientMatch = rawQuestion.match(/\bpara\s+([A-Za-zÀ-ÿ]+(?:\s+(?!\b(?:na|no|em|rua|av|às|as)\b)[A-Za-zÀ-ÿ]+){0,3})(?=\s+(?:na|no|em|rua|av|às|as|,)|$)/i);
       const addrMatch = rawQuestion.match(/\b(?:na|no)\s+(.+)$/i);
       const itens = [];
-      if (/sof[aá]\s*(?:de\s*)?3/i.test(question)) itens.push({ nome: "Sofá 3 lugares", quantidade: 1, valor_unitario: null });
+      if (/sof[aá]\s*(?:de\s*)?(2|dois)\s*(?:m[oó]dulos?|modos?|lugares?)?/i.test(question)) itens.push({ nome: "Sofá 2 módulos", quantidade: 1, valor_unitario: null });
+      else if (/sof[aá]\s*(?:de\s*)?3/i.test(question)) itens.push({ nome: "Sofá 3 módulos", quantidade: 1, valor_unitario: null });
       else if (/sof[aá]/i.test(question)) itens.push({ nome: "Sofá de teste", quantidade: 1, valor_unitario: null });
       const chairsMatch = question.match(/(\d+)\s+cadeiras?/i);
       if (chairsMatch) itens.push({ nome: "Cadeira", quantidade: Number(chairsMatch[1]), valor_unitario: null });

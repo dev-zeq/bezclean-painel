@@ -203,6 +203,7 @@ Retorne somente JSON com campo "modo": "agenda", "livres", "local", "agendar" ou
   "tipo_limpeza" (texto|null), "observacoes" (texto|null),
   "itens": [{"nome": texto, "quantidade": inteiro, "valor_unitario": numero|null}],
   "valor_total" (numero|null), "status" ("confirmado"|"provisorio").
+Na Bez Clean, sofás são medidos em "módulos" (ex.: "Sofá 2 módulos", "Sofá 3 módulos", "Sofá 4 módulos"), nunca em "lugares". Se a transcrição vier como "modo", "modos", "modelo" ou "lugares" junto de sofá, normalize para "módulos" (ex.: "Sofá 2 módulos").
 Nunca invente preços, datas, horários ou nomes não ditos pelo usuário; use null quando ausente. Se for ambíguo ou fora da Agenda, use "esclarecer".` },
             { role: "user", content: question }
           ]

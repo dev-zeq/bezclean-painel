@@ -231,7 +231,8 @@ const BOOKING_PERIODS = {
 const STOP_WORDS = new Set(["de", "do", "da", "dos", "das", "com", "para", "em", "e", "o", "a", "os", "as", "um", "uma", "higienizacao", "limpeza"]);
 const PLURAL_MAP = {
   sofas: "sofa", cadeiras: "cadeira", poltronas: "poltrona", colchoes: "colchao",
-  modulos: "modulo", lugares: "lugar", tapetes: "tapete", puffs: "puff", pufes: "puff", pufe: "puff",
+  modulos: "modulo", modo: "modulo", modos: "modulo",
+  lugares: "lugar", tapetes: "tapete", puffs: "puff", pufes: "puff", pufe: "puff",
   cabeceiras: "cabeceira", bancos: "banco", carros: "carro", impermeabilizacoes: "impermeabilizacao",
   camas: "cama", assentos: "assento"
 };

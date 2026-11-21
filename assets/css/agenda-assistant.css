@@ -231,6 +231,19 @@
   color: var(--bz-muted);
   font-size: 0.74rem;
 }
+#agendaAssistant .bez-draft-price-col {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#agendaAssistant .bez-draft-crossed:empty {
+  display: none;
+}
+#agendaAssistant .bez-draft-crossed s {
+  color: var(--bz-muted);
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
 #agendaAssistant .bez-draft-price-wrap {
   display: inline-flex;
   align-items: center;

@@ -437,7 +437,7 @@
                   ? `<s>${esc(money(item.valor_original * item.quantidade))}</s> `
                   : "";
                 const priceCell = needsInput
-                  ? `<label class="bez-draft-price-wrap"><span>R$</span><input type="number" min="0" step="0.01" inputmode="decimal" class="bez-draft-price-input" data-item-price="${idx}" placeholder="Valor" value="${Number.isFinite(item.valor_unitario) ? esc(item.valor_unitario) : ""}"></label>`
+                  ? `<span class="bez-draft-price-col"><span class="bez-draft-crossed" data-item-crossed="${idx}">${crossedHtml}</span><label class="bez-draft-price-wrap"><span>R$</span><input type="number" min="0" step="0.01" inputmode="decimal" class="bez-draft-price-input" data-item-price="${idx}" placeholder="Valor" value="${Number.isFinite(item.valor_unitario) ? esc(item.valor_unitario) : ""}"></label></span>`
                   : `<span class="bez-draft-item-val">${crossedHtml}<strong>${esc(money(item.valor_total))}</strong></span>`;
                 return `<li><span>${esc(qtyPrefix + item.nome)}</span>${priceCell}</li>`;
               }).join("")}</ul>`
@@ -517,7 +517,8 @@
 
       card.querySelectorAll("[data-item-price]").forEach(input => {
         input.oninput = () => {
-          const item = state.items[Number(input.dataset.itemPrice)];
+          const itemIdx = Number(input.dataset.itemPrice);
+          const item = state.items[itemIdx];
           if (!item) return;
           const raw = input.value.trim();
           const num = raw === "" ? NaN : Number(raw);
@@ -531,6 +532,12 @@
             item.valor_unitario = null;
             item.valor_total = null;
             item.valor_original = null;
+          }
+          const crossedEl = card.querySelector(`[data-item-crossed="${itemIdx}"]`);
+          if (crossedEl) {
+            crossedEl.innerHTML = item.valor_original && Number.isFinite(item.valor_unitario) && item.valor_original > item.valor_unitario
+              ? `<s>${esc(money(item.valor_original * item.quantidade))}</s>`
+              : "";
           }
           updateDraftTotalsInPlace();
         };
