@@ -30,6 +30,9 @@ const records = {
   clientes: [client], apartamentos: [apartment], agendamento_itens: [],
   catalogo_precos: [
     { id: "servico-teste", nome: "Sofá de teste", valor: 120, categoria: "sofa", tipo: "base", ativo: true },
+    { id: "sofa-3-lugares", nome: "Sofá 3 lugares", valor: 199, categoria: "sofa", tipo: "base", ativo: true },
+    { id: "cadeira-teste", nome: "Cadeira", valor: 30, categoria: "cadeiras", tipo: "base", ativo: true },
+    { id: "colchao-casal", nome: "Colchão casal", valor: 160, categoria: "colchao", tipo: "base", ativo: true },
     { id: "poltrona-teste", nome: "Poltrona de teste", valor: 80, categoria: "poltrona", tipo: "base", ativo: true }
   ],
   orcamentos: [], modelos_mensagem: [], campanhas: [], campanha_clientes: [], campanha_contatos: [],
@@ -70,8 +73,56 @@ const reserved = createAssistantHandler(
   { base: origin, publishable: "sb_publishable_preview", quotaKey: "sb_secret_preview", deepseekKey: "preview-only", origins: [origin] },
   (url, options) => {
     if (url.startsWith(origin + "/")) return fetch(url, options);
-    const question = JSON.parse(options.body).messages[1].content.toLowerCase();
-    const date = question.includes("amanhã") ? tomorrow : today;
+    if (url.startsWith("https://api.deepseek.com/v1/tools/asr")) {
+      return Response.json({
+        request_id: "preview-asr",
+        text: "Agenda amanhã às 14 horas sofá 3 lugares e 2 cadeiras para Maria Souza na Rua 230, 120, Meia Praia",
+        duration_ms: 4200
+      });
+    }
+    const rawQuestion = JSON.parse(options.body).messages[1].content;
+    const question = rawQuestion.toLowerCase();
+    const date = question.includes("amanhã") || question.includes("amanha") ? tomorrow : today;
+
+    const isBooking = /\b(agendar|marcar|agenda)\b/.test(question) && (
+      /\bpara\b/.test(question) ||
+      /(sof[aá]|cadeira|colch[aã]o|poltrona|faxina|tapete|apartamento|apto)/i.test(question)
+    );
+    if (isBooking) {
+      const timeMatch = rawQuestion.match(/(?:às|as)\s*(\d{1,2})(?::(\d{2})|\s*h(?:oras?)?(?:\s*(\d{2}))?)?/i);
+      const hora_inicio = timeMatch
+        ? String(Number(timeMatch[1])).padStart(2, "0") + ":" + String(Number(timeMatch[2] || timeMatch[3] || 0)).padStart(2, "0")
+        : "14:00";
+      const clientMatch = rawQuestion.match(/\bpara\s+([A-Za-zÀ-ÿ]+(?:\s+(?!\b(?:na|no|em|rua|av|às|as)\b)[A-Za-zÀ-ÿ]+){0,3})(?=\s+(?:na|no|em|rua|av|às|as|,)|$)/i);
+      const addrMatch = rawQuestion.match(/\b(?:na|no)\s+(.+)$/i);
+      const itens = [];
+      if (/sof[aá]\s*(?:de\s*)?3/i.test(question)) itens.push({ nome: "Sofá 3 lugares", quantidade: 1, valor_unitario: null });
+      else if (/sof[aá]/i.test(question)) itens.push({ nome: "Sofá de teste", quantidade: 1, valor_unitario: null });
+      const chairsMatch = question.match(/(\d+)\s+cadeiras?/i);
+      if (chairsMatch) itens.push({ nome: "Cadeira", quantidade: Number(chairsMatch[1]), valor_unitario: null });
+      else if (/cadeira/i.test(question)) itens.push({ nome: "Cadeira", quantidade: 1, valor_unitario: null });
+      if (/colch[aã]o/i.test(question)) itens.push({ nome: "Colchão casal", quantidade: 1, valor_unitario: null });
+      if (/tapete/i.test(question)) itens.push({ nome: "Tapete persa grande", quantidade: 1, valor_unitario: null });
+      return Response.json({
+        choices: [{
+          message: {
+            content: JSON.stringify({
+              modo: "agendar",
+              agendamento: {
+                tipo: question.includes("faxina") ? "faxina" : "estofados",
+                data: date,
+                hora_inicio,
+                cliente_nome: clientMatch ? clientMatch[1].trim() : "Maria Souza",
+                endereco: addrMatch ? addrMatch[1].trim() : null,
+                itens,
+                status: /provis[oó]rio/.test(question) ? "provisorio" : "confirmado"
+              }
+            })
+          }
+        }]
+      });
+    }
+
     const place = question.includes("itapema") || question.includes("centro");
     const modo = place ? "local" : /livre|dispon/.test(question) ? "livres" : /hoje|amanhã/.test(question) ? "agenda" : "esclarecer";
     const interpretation = {
