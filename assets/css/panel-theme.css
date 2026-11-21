@@ -1,0 +1,405 @@
+/* Botão de tema claro/escuro na barra superior */
+.nav-theme-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--navy);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.nav-theme-btn:hover {
+  border-color: var(--blue);
+  background: var(--brand-cyan-soft);
+}
+
+.nav-theme-btn svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .nav-theme-btn {
+    margin-left: auto;
+  }
+  .nav-theme-btn + .nav-signout {
+    margin-left: 0;
+  }
+}
+
+/* ==========================================================================
+   TEMA ESCURO OLED — Padronização das páginas do painel
+   ========================================================================== */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --brand-navy: #F3F6FA;
+  --brand-blue: #3B9EFF;
+  --brand-cyan: #38D1EE;
+  --brand-cyan-soft: #122E3D;
+  --ink: #FFFFFF;
+  --muted: #9BA5B5;
+  --surface: #11141A;
+  --canvas: #060709;
+  --surface-alt: #191D25;
+  --border: #2C333E;
+  --border-strong: #3F4857;
+  --success: #4EE8B8;
+  --success-soft: #0F2E26;
+  --warning: #FBBF24;
+  --warning-soft: #2E220E;
+  --danger: #FF7875;
+  --danger-soft: #331317;
+  --navy: var(--brand-navy);
+  --blue: var(--brand-blue);
+  --cyan: var(--brand-cyan);
+  --soft: var(--surface-alt);
+  --ok: var(--success);
+  --warn: var(--warning);
+}
+
+:root[data-theme="dark"] .brand img,
+:root[data-theme="dark"] .brand-logo {
+  background: #FFFFFF;
+  padding: 3px;
+}
+
+:root[data-theme="dark"] .main-nav a[aria-current] {
+  color: #FFFFFF;
+  background: #16569B;
+}
+
+:root[data-theme="dark"] .primary {
+  color: #FFFFFF;
+  background: #1268B3;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="dark"] .secondary {
+  color: #F3F6FA;
+  background: #191D25;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .danger {
+  color: #FF7875;
+  background: #331317;
+  border-color: #9E3B42;
+}
+
+:root[data-theme="dark"] .stats article,
+:root[data-theme="dark"] .summary-grid article,
+:root[data-theme="dark"] .card,
+:root[data-theme="dark"] .settings-card {
+  background: #11141A;
+  border-color: #2C333E;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  color: #FFFFFF;
+  background: #0B0D11;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .client-picker-results,
+:root[data-theme="dark"] .client-picker-results button {
+  color: #FFFFFF;
+  background: #191D25;
+  border-color: #2C333E;
+}
+
+:root[data-theme="dark"] dialog {
+  color: #FFFFFF;
+  background: #11141A;
+  border: 1px solid #3F4857;
+}
+
+:root[data-theme="dark"] dialog::backdrop {
+  background: rgba(0, 0, 0, 0.80);
+}
+
+:root[data-theme="dark"] .modal,
+:root[data-theme="dark"] .modal-card {
+  color: #FFFFFF;
+  background: #11141A;
+}
+
+:root[data-theme="dark"] .toast {
+  color: #FFFFFF;
+  background: #191D25;
+  border: 1px solid #3F4857;
+}
+
+:root[data-theme="dark"] .mobile-tabs {
+  background: #11141A;
+  border-top-color: #2C333E;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.55);
+}
+
+:root[data-theme="dark"] .mobile-tab.is-active {
+  color: #38D1EE;
+  background: #122E3D;
+}
+
+:root[data-theme="dark"] .pdf-preview {
+  background: #060709;
+}
+
+:root[data-theme="dark"] .pdf-preview-bar {
+  background: #11141A;
+  border-bottom-color: #2C333E;
+}
+
+:root[data-theme="dark"] .action-list button {
+  color: #FFFFFF;
+}
+
+:root[data-theme="dark"] .segmented button[aria-pressed="true"] {
+  background: #16569B;
+  color: #FFFFFF;
+}
+
+/* Clientes */
+:root[data-theme="dark"] .client {
+  color: #FFFFFF;
+  background: #11141A;
+  border-top-color: #2C333E;
+}
+
+:root[data-theme="dark"] .client:hover {
+  background: #191D25;
+}
+
+:root[data-theme="dark"] .badge {
+  color: #60B2FF;
+  background: #152D4A;
+}
+
+:root[data-theme="dark"] .badge.ok {
+  color: #4EE8B8;
+  background: #0F2E26;
+}
+
+:root[data-theme="dark"] .badge.warn {
+  color: #FBBF24;
+  background: #2E220E;
+}
+
+:root[data-theme="dark"] .detail-grid article,
+:root[data-theme="dark"] .history-item {
+  background: #191D25;
+  border-color: #2C333E;
+}
+
+/* Orçamentos */
+:root[data-theme="dark"] .status-filters button {
+  color: #D0D7E2;
+  background: #191D25;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .status-filters button[aria-pressed="true"] {
+  color: #FFFFFF;
+  background: #16569B;
+  border-color: #16569B;
+}
+
+:root[data-theme="dark"] .status-filters button.attention:not([aria-pressed="true"]) {
+  color: #FBBF24;
+  background: #2E220E;
+  border-color: #94681E;
+}
+
+:root[data-theme="dark"] .quote {
+  color: #FFFFFF;
+  background: #11141A;
+  border-top-color: #2C333E;
+}
+
+:root[data-theme="dark"] .quote:hover {
+  background: #191D25;
+}
+
+:root[data-theme="dark"] .badge.aprovado,
+:root[data-theme="dark"] .badge.agendado,
+:root[data-theme="dark"] .badge.concluido {
+  color: #4EE8B8;
+  background: #0F2E26;
+}
+
+:root[data-theme="dark"] .badge.recusado,
+:root[data-theme="dark"] .badge.expirado {
+  color: #FF7875;
+  background: #331317;
+}
+
+:root[data-theme="dark"] .badge.rascunho {
+  color: #9BA5B5;
+  background: #191D25;
+}
+
+:root[data-theme="dark"] .service-group,
+:root[data-theme="dark"] .qitem,
+:root[data-theme="dark"] .item,
+:root[data-theme="dark"] .quick-option {
+  color: #FFFFFF;
+  background: #191D25;
+  border-color: #2C333E;
+}
+
+:root[data-theme="dark"] .service {
+  color: #FFFFFF;
+  background: #20252F;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .service.added {
+  background: #0F2E26;
+  border-color: #2E8F72;
+}
+
+:root[data-theme="dark"] .offer-card {
+  background: #191D25;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .offer-card.on {
+  background: #0F2E26;
+  border-color: #2E8F72;
+}
+
+:root[data-theme="dark"] .offer-card.on .offer-text b,
+:root[data-theme="dark"] .chip-tag,
+:root[data-theme="dark"] .qitem-off {
+  color: #4EE8B8;
+}
+
+:root[data-theme="dark"] .chip-tag,
+:root[data-theme="dark"] .qitem-off {
+  background: #0F2E26;
+}
+
+:root[data-theme="dark"] .offer-switch {
+  background: #3F4857;
+}
+
+:root[data-theme="dark"] .chip {
+  color: #F3F6FA;
+  background: #191D25;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .chip.added {
+  background: #122E3D;
+  border-color: #3B9EFF;
+}
+
+:root[data-theme="dark"] .qitem-qty button {
+  color: #F3F6FA;
+  background: #20252F;
+}
+
+:root[data-theme="dark"] .item-mode-note {
+  color: #FBBF24;
+}
+
+:root[data-theme="dark"] .total {
+  color: #E0F2FE;
+  background: #122E3D;
+}
+
+:root[data-theme="dark"] .quote-actions {
+  background: #11141A;
+  border-top-color: #2C333E;
+}
+
+:root[data-theme="dark"] body.quote-page {
+  background: #11141A;
+}
+
+/* Campanhas */
+:root[data-theme="dark"] .campaign-counts article {
+  background: #11141A;
+  border-color: #2C333E;
+}
+
+:root[data-theme="dark"] .campaign-filters button {
+  color: #F3F6FA;
+  background: #191D25;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .campaign-filters button.active {
+  color: #FFFFFF;
+  background: #122E3D;
+  border-color: #38D1EE;
+}
+
+/* Mensagens */
+:root[data-theme="dark"] .model {
+  color: #FFFFFF;
+  background: #11141A;
+  border-top-color: #2C333E;
+}
+
+:root[data-theme="dark"] .model:hover {
+  background: #191D25;
+}
+
+/* Tabela de Preços */
+:root[data-theme="dark"] .promo-card,
+:root[data-theme="dark"] .price-category,
+:root[data-theme="dark"] .price-empty {
+  color: #FFFFFF;
+  background: #11141A;
+  border-color: #2C333E;
+}
+
+:root[data-theme="dark"] .promo-summary {
+  color: #4EE8B8;
+}
+
+:root[data-theme="dark"] .promo-note {
+  color: #9BA5B5;
+}
+
+:root[data-theme="dark"] .price-category-head {
+  background: #191D25;
+  border-bottom-color: #2C333E;
+}
+
+:root[data-theme="dark"] .price-row.inactive {
+  background: #0D1015;
+}
+
+:root[data-theme="dark"] .price-row-actions .toggle {
+  color: #F3F6FA;
+  background: #191D25;
+  border-color: #3F4857;
+}
+
+:root[data-theme="dark"] .price-row-actions .toggle.is-inactive {
+  color: #4EE8B8;
+  background: #0F2E26;
+  border-color: #2E8F72;
+}
+
+:root[data-theme="dark"] .price-warning,
+:root[data-theme="dark"] .setup-card {
+  color: #FDE68A;
+  background: #2E220E;
+  border-color: #94681E;
+}
+
+:root[data-theme="dark"] .price-status.error {
+  border-color: #9E3B42;
+}

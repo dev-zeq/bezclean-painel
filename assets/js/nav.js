@@ -35,10 +35,17 @@
   ];
   const current = item => item.pages.includes(file) ? ' aria-current="page"' : "";
 
+  const showHeaderTheme = file !== "index.html";
+  const themeIcons = {
+    sun: icon('<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/>'),
+    moon: icon('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>')
+  };
+
   header.className = "top";
   header.innerHTML =
     `<div class="brand"><img src="https://bezclean.com.br/imagens/LOGO.png" alt="Bez Clean"><div><b>Bez Clean</b><small>Painel operacional</small></div></div>` +
     `<nav class="main-nav" aria-label="Navegação principal">${desktop.map(item => `<a href="${withVersion(item.href)}"${current(item)}>${item.label}</a>`).join("")}</nav>` +
+    (showHeaderTheme ? `<button id="themeToggleBtn" class="nav-theme-btn" type="button" aria-pressed="false" aria-label="Ativar tema escuro"></button>` : "") +
     `<button id="signOutBtn" class="nav-signout" type="button">Sair</button>`;
 
   const tabs = document.createElement("nav");
@@ -46,6 +53,20 @@
   tabs.setAttribute("aria-label", "Páginas do painel");
   tabs.innerHTML = mobile.map(item => `<a href="${withVersion(item.href)}" class="mobile-tab${current(item) ? " is-active" : ""}"${current(item)}>${item.icon ? icon(item.icon) : ""}<span>${item.label}</span></a>`).join("");
   header.after(tabs);
+
+  if (showHeaderTheme && typeof window.BezTheme !== "undefined") {
+    const themeBtn = header.querySelector("#themeToggleBtn");
+    const syncThemeButton = theme => {
+      const dark = theme === "dark";
+      themeBtn.innerHTML = dark ? themeIcons.sun : themeIcons.moon;
+      themeBtn.setAttribute("aria-pressed", String(dark));
+      themeBtn.setAttribute("aria-label", dark ? "Ativar tema claro" : "Ativar tema escuro");
+      themeBtn.title = dark ? "Ativar tema claro" : "Ativar tema escuro";
+    };
+    syncThemeButton(window.BezTheme.init());
+    window.BezTheme.onChange(syncThemeButton);
+    themeBtn.addEventListener("click", () => window.BezTheme.toggleTheme());
+  }
 
   header.querySelector("#signOutBtn").addEventListener("click", async () => {
     try { await panelSupabase.auth.signOut(); } catch (error) {
