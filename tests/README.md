@@ -39,3 +39,5 @@ A prévia local abre com `node tests/agenda-preview.mjs` em [127.0.0.1:8126](htt
 Com `@electric-sql/pglite` disponível, rode também `node --test supabase/testes/*.test.mjs`. O teste de isolamento usa duas identidades fictícias, aplica a migração de cotas num Postgres local, confirma que cada identidade só recebe seus próprios agendamentos e bloqueios e verifica a reversão. A autenticação e o DeepSeek são simulados nesse teste.
 
 No formulário de agendamento direto, adicione um sofá e uma poltrona. Com a Oferta 40% ligada, digite R$ 199,00 no sofá e confira o riscado de R$ 331,67. Salve e reabra o atendimento. Em Orçamentos, abra o Assistente Bez e escolha um atendimento da resposta para abrir os detalhes na Agenda.
+
+`node tests/orcamento-pdf.test.cjs`: PDF em arquivo para iPhone (detecção de iPhone/iPad, divisão em páginas A4 sem cortar blocos e nome do arquivo sem acento no download de reserva).

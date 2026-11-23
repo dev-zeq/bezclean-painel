@@ -1,4 +1,4 @@
-const APP_VERSION = "20261120i";
+const APP_VERSION = "20261123b";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => navigator.serviceWorker.register(`/sw.js?v=${APP_VERSION}`).then(registration => registration.update()).catch(() => {}));
@@ -30,6 +30,11 @@ if (quoteWhatsAppButton) {
 // Antes o PDF abria em uma janela nova; no app instalado no celular essa janela não tem botão de voltar.
 let quotePreviewDialog = null;
 let quotePreviewHistory = false;
+// No iPhone a impressão não salva nada; o PDF é gerado como arquivo e vai para o menu de compartilhar.
+const quotePdfAsFile = () => typeof QuotePdf !== "undefined" && QuotePdf.isIOS(navigator.userAgent, navigator.platform, navigator.maxTouchPoints);
+let quotePdfFile = null;
+let quotePdfToken = 0;
+const quotePdfName = clientName => ("Orçamento Bez Clean" + (clientName ? " - " + clientName : "")).replace(/[\\/:*?"<>|]+/g, " ").replace(/\s+/g, " ").trim() + ".pdf";
 const closeQuotePreview = () => {
   if (!quotePreviewDialog?.open) return;
   if (quotePreviewHistory) { history.back(); return; }
@@ -45,6 +50,13 @@ const openQuotePreview = (html, clientName) => {
     document.body.appendChild(quotePreviewDialog);
     quotePreviewDialog.querySelector("[data-preview-back]").onclick = closeQuotePreview;
     quotePreviewDialog.querySelector("[data-preview-print]").onclick = () => {
+      if (quotePdfFile) {
+        // Tem que ser chamado direto no toque, senão o iPhone não abre o compartilhar.
+        QuotePdf.share(quotePdfFile, quotePdfFile.name.replace(/\.pdf$/, "")).then(result => {
+          if (result === "downloaded") toast("PDF baixado. Procure em Arquivos para enviar.");
+        }).catch(() => toast("Não foi possível compartilhar o PDF. Tente novamente."));
+        return;
+      }
       const frameWindow = quotePreviewDialog.querySelector("iframe").contentWindow;
       try { frameWindow.focus(); frameWindow.print(); } catch { toast("Não foi possível abrir a impressão. Tente novamente."); }
     };
@@ -58,6 +70,25 @@ const openQuotePreview = (html, clientName) => {
   }
   quotePreviewDialog.querySelector(".pdf-preview-title").textContent = clientName ? "Orçamento · " + clientName : "Orçamento";
   quotePreviewDialog.querySelector("iframe").srcdoc = html;
+  const printButton = quotePreviewDialog.querySelector("[data-preview-print]");
+  const token = ++quotePdfToken;
+  quotePdfFile = null;
+  if (quotePdfAsFile()) {
+    printButton.disabled = true;
+    printButton.textContent = "Preparando…";
+    QuotePdf.build(html, quotePdfName(clientName), { version: APP_VERSION }).then(result => {
+      if (token === quotePdfToken) quotePdfFile = result.file;
+    }).catch(() => {
+      if (token === quotePdfToken) toast("Não foi possível gerar o arquivo do PDF.");
+    }).finally(() => {
+      if (token !== quotePdfToken) return;
+      printButton.disabled = false;
+      printButton.textContent = "Salvar PDF";
+    });
+  } else {
+    printButton.disabled = false;
+    printButton.textContent = "Salvar PDF";
+  }
   if (!quotePreviewDialog.open) {
     quotePreviewDialog.showModal();
     try { history.pushState({ quotePreview: true }, ""); quotePreviewHistory = true; } catch { quotePreviewHistory = false; }
