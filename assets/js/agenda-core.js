@@ -136,11 +136,80 @@
     return addDays(date, (mode === "week" ? 7 : 1) * step);
   }
 
+  const WAY_NOTICE_STATUSES = ["agendado", "confirmado"];
+  const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+  function canUseWayNotice(appointment) {
+    return !!(appointment && typeOf(appointment) === "estofados" && WAY_NOTICE_STATUSES.includes(appointment.status));
+  }
+
+  function addMinutesToTime(inicioEm, offsetMinutes) {
+    const start = inicioEm instanceof Date ? inicioEm : new Date(inicioEm);
+    if (Number.isNaN(start.getTime())) return "";
+    return hhmm(new Date(start.getTime() + (Number(offsetMinutes) || 0) * 60000));
+  }
+
+  function wayNoticeBadge(appointment) {
+    if (!appointment) return { tone: "auto", text: "Automático (30 min antes)", observation: null };
+    if (appointment.lembrete_caminho_status === "enviado") {
+      const sent = appointment.lembrete_caminho_enviado_em ? new Date(appointment.lembrete_caminho_enviado_em) : null;
+      const sentTime = sent && !Number.isNaN(sent.getTime()) ? hhmm(sent) : "--:--";
+      return { tone: "sent", text: "Aviso enviado às " + sentTime, observation: null };
+    }
+    if (appointment.lembrete_caminho_modo === "atraso") {
+      return {
+        tone: "delay",
+        text: "Atraso: previsto " + (appointment.lembrete_caminho_novo_horario || "--:--"),
+        observation: appointment.lembrete_caminho_observacao || null
+      };
+    }
+    if (appointment.lembrete_caminho_modo === "pausado") {
+      return { tone: "paused", text: "Aviso pausado", observation: null };
+    }
+    return { tone: "auto", text: "Automático (30 min antes)", observation: null };
+  }
+
+  function buildWayNoticePayload(action, options) {
+    const opts = options || {};
+    const nowIso = opts.nowIso || new Date().toISOString();
+    if (action === "atraso") {
+      const novoHorario = String(opts.novoHorario || "").trim();
+      if (!HHMM_RE.test(novoHorario)) {
+        throw new Error("Informe o horário previsto no formato HH:mm.");
+      }
+      const obs = opts.observacao != null ? String(opts.observacao).trim() : "";
+      return {
+        lembrete_caminho_modo: "atraso",
+        lembrete_caminho_novo_horario: novoHorario,
+        lembrete_caminho_observacao: obs || null,
+        lembrete_caminho_status: "pendente",
+        lembrete_caminho_atualizado_em: nowIso
+      };
+    }
+    if (action === "pausado") {
+      return {
+        lembrete_caminho_modo: "pausado",
+        lembrete_caminho_atualizado_em: nowIso
+      };
+    }
+    if (action === "automatico") {
+      return {
+        lembrete_caminho_modo: "automatico",
+        lembrete_caminho_novo_horario: null,
+        lembrete_caminho_observacao: null,
+        lembrete_caminho_atualizado_em: nowIso
+      };
+    }
+    throw new Error("Modo de aviso inválido.");
+  }
+
   return {
     TYPES: TYPES, STATUS: STATUS, PERIODS: PERIODS, HALVES: HALVES, CLEANING_TYPES: CLEANING_TYPES, AIRBNB_CLEANING: AIRBNB_CLEANING, isAirbnb: isAirbnb,
     dateKey: dateKey, hhmm: hhmm, addDays: addDays, minutes: minutes, typeOf: typeOf, isActive: isActive, title: title,
     periodOf: periodOf, range: range, overlaps: overlaps, halvesOf: halvesOf, dayBuckets: dayBuckets, isFree: isFree,
     conflicts: conflicts, findConflicts: findConflicts, conflictMessage: conflictMessage,
-    weekStart: weekStart, viewRange: viewRange, shift: shift
+    weekStart: weekStart, viewRange: viewRange, shift: shift,
+    canUseWayNotice: canUseWayNotice, addMinutesToTime: addMinutesToTime,
+    wayNoticeBadge: wayNoticeBadge, buildWayNoticePayload: buildWayNoticePayload
   };
 });
