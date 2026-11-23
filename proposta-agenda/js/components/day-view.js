@@ -30,6 +30,17 @@
     const noonBadge = entry.crossesNoon
       ? '<span class="badge-chip badge-noon-bridge">Manhã → Tarde · até ' + S.esc(T.hhmm(entry.end)) + "</span>"
       : "";
+    let wayBadge = "";
+    if (type === "estofados" && (ev.status === "agendado" || ev.status === "confirmado")) {
+      if (ev.lembrete_caminho_status === "enviado") {
+        const sentAt = ev.lembrete_caminho_enviado_em ? T.hhmm(new Date(ev.lembrete_caminho_enviado_em)) : "--:--";
+        wayBadge = '<span class="badge-chip way-card-badge is-sent">Aviso enviado às ' + S.esc(sentAt) + "</span>";
+      } else if (ev.lembrete_caminho_modo === "atraso") {
+        wayBadge = '<span class="badge-chip way-card-badge is-delay">Atraso: previsto ' + S.esc(ev.lembrete_caminho_novo_horario || "--:--") + "</span>";
+      } else if (ev.lembrete_caminho_modo === "pausado") {
+        wayBadge = '<span class="badge-chip way-card-badge is-paused">Aviso pausado</span>';
+      }
+    }
     const addrShort = ev.endereco ? ev.endereco.split("—")[0].trim() : "Endereço a informar";
     const valueText = Number(ev.valor) ? T.formatMoney(ev.valor) : "Valor a definir";
 
@@ -40,6 +51,7 @@
           '<div class="appt-badges">' +
             S.typeBadge(ev) +
             S.statusBadge(ev.status) +
+            wayBadge +
             noonBadge +
           "</div>" +
         "</div>" +

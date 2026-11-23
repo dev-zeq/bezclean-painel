@@ -77,4 +77,59 @@ assert.equal(A.dateKey(A.shift("week", at(11, 0), 1)), "2026-11-18");
 assert.equal(A.dateKey(A.shift("day", at(30, 0), 1)), "2026-12-01");
 assert.equal(A.dateKey(A.shift("month", new Date(2026, 0, 31), 1)), "2026-02-01", "mês seguinte não pula fevereiro");
 
+// Aviso a caminho / Atraso (somente estofados em agendado ou confirmado)
+assert.equal(A.canUseWayNotice({ tipo: "estofados", status: "agendado" }), true);
+assert.equal(A.canUseWayNotice({ tipo: "estofados", status: "confirmado" }), true);
+assert.equal(A.canUseWayNotice({ tipo: "estofados", status: "concluido" }), false);
+assert.equal(A.canUseWayNotice({ tipo: "estofados", status: "cancelado" }), false);
+assert.equal(A.canUseWayNotice({ tipo: "estofados", status: "provisorio" }), false);
+assert.equal(A.canUseWayNotice({ tipo: "faxina", status: "confirmado" }), false);
+assert.equal(A.canUseWayNotice({ tipo: "apartamento", status: "confirmado" }), false);
+
+assert.equal(A.addMinutesToTime(at(23, 14, 0).toISOString(), 15), "14:15");
+assert.equal(A.addMinutesToTime(at(23, 14, 0).toISOString(), 30), "14:30");
+assert.equal(A.addMinutesToTime(at(23, 14, 0).toISOString(), 45), "14:45");
+assert.equal(A.addMinutesToTime(at(23, 14, 0).toISOString(), 60), "15:00");
+
+assert.deepEqual(A.wayNoticeBadge({ lembrete_caminho_modo: "automatico", lembrete_caminho_status: "pendente" }), {
+  tone: "auto", text: "Automático (30 min antes)", observation: null
+});
+assert.deepEqual(A.wayNoticeBadge({ lembrete_caminho_modo: "pausado", lembrete_caminho_status: "pendente" }), {
+  tone: "paused", text: "Aviso pausado", observation: null
+});
+assert.deepEqual(A.wayNoticeBadge({
+  lembrete_caminho_modo: "atraso", lembrete_caminho_novo_horario: "14:45", lembrete_caminho_observacao: "Trânsito", lembrete_caminho_status: "pendente"
+}), {
+  tone: "delay", text: "Atraso: previsto 14:45", observation: "Trânsito"
+});
+assert.deepEqual(A.wayNoticeBadge({
+  lembrete_caminho_modo: "atraso", lembrete_caminho_status: "enviado", lembrete_caminho_enviado_em: at(23, 13, 30).toISOString()
+}), {
+  tone: "sent", text: "Aviso enviado às 13:30", observation: null
+});
+
+const fixedNow = "2026-11-23T15:00:00.000Z";
+const delayPayload = A.buildWayNoticePayload("atraso", { novoHorario: "14:45", observacao: "  Chuva forte ", nowIso: fixedNow });
+assert.deepEqual(delayPayload, {
+  lembrete_caminho_modo: "atraso",
+  lembrete_caminho_novo_horario: "14:45",
+  lembrete_caminho_observacao: "Chuva forte",
+  lembrete_caminho_status: "pendente",
+  lembrete_caminho_atualizado_em: fixedNow
+});
+assert.equal("inicio_em" in delayPayload, false, "nunca altera inicio_em");
+assert.equal("fim_em" in delayPayload, false, "nunca altera fim_em");
+assert.throws(() => A.buildWayNoticePayload("atraso", { novoHorario: "25:99" }));
+
+assert.deepEqual(A.buildWayNoticePayload("pausado", { nowIso: fixedNow }), {
+  lembrete_caminho_modo: "pausado",
+  lembrete_caminho_atualizado_em: fixedNow
+});
+assert.deepEqual(A.buildWayNoticePayload("automatico", { nowIso: fixedNow }), {
+  lembrete_caminho_modo: "automatico",
+  lembrete_caminho_novo_horario: null,
+  lembrete_caminho_observacao: null,
+  lembrete_caminho_atualizado_em: fixedNow
+});
+
 console.log("agenda-core: ok");

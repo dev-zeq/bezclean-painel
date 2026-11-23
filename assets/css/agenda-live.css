@@ -138,3 +138,100 @@
   #panelView .mobile-tabs { display: none; }
   #mobileFabBtn { bottom: 16px; }
 }
+
+/* Controle compacto de "Aviso a caminho / Atraso" */
+.way-notice-box {
+  margin-top: 14px;
+  padding: 12px 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-alt);
+  display: grid;
+  gap: 8px;
+}
+.way-notice-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.way-notice-head strong {
+  font-size: 0.86rem;
+  color: var(--ink);
+}
+.way-badge,
+.way-card-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+.way-badge.is-sent,
+.way-card-badge.is-sent {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.way-badge.is-delay,
+.way-card-badge.is-delay {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.way-badge.is-paused,
+.way-card-badge.is-paused {
+  background: var(--soft);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.way-badge.is-auto {
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.way-notice-obs {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.way-notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.way-action-btn {
+  flex: 1 1 auto;
+  min-height: 42px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+}
+.way-delay-origin {
+  margin: 8px 0 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+.way-delay-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.way-shortcut-btn {
+  min-height: 44px;
+  padding: 8px 6px;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+.way-shortcut-btn.is-selected {
+  background: var(--warning-soft);
+  border-color: var(--warning);
+  color: var(--warning);
+}
+@media (max-width: 420px) {
+  .way-delay-shortcuts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -27,7 +27,7 @@ async function loadAgenda() {
 
   try {
     const [events, blocks] = await Promise.all([
-      db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,descricao_servico,valor,endereco,cidade,bairro,clientes(nome,telefone),apartamentos(nome,edificio,airbnb,contato_telefone)").is("excluido_em", null).lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em"),
+      db.from("agendamentos").select("id,tipo,status,inicio_em,fim_em,descricao_servico,valor,endereco,cidade,bairro,lembrete_caminho_modo,lembrete_caminho_novo_horario,lembrete_caminho_observacao,lembrete_caminho_status,lembrete_caminho_enviado_em,clientes(nome,telefone),apartamentos(nome,edificio,airbnb,contato_telefone)").is("excluido_em", null).lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em"),
       db.from("bloqueios_agenda").select("id,inicio_em,fim_em,motivo").lt("inicio_em", end.toISOString()).gt("fim_em", start.toISOString()).order("inicio_em")
     ]);
     if (request !== agendaRequest) return;
@@ -75,7 +75,105 @@ async function openDetails(id, { signal, onError = toast } = {}) {
   $("appointmentMenu").innerHTML = block ? "" : Manage.menu([{ id: "delete", icon: "🗑️", label: "Excluir atendimento (teste)", danger: true }]);
   Manage.bindMenu($("appointmentMenu"), { delete: deleteAppointment });
   if (block) $("detailsContent").insertAdjacentHTML("beforeend", '<p class="trash-note">' + esc(block) + "</p>");
+  renderWayNoticeBox(data);
   $("detailsDialog").showModal();
+}
+
+/* ---------- Aviso a caminho / Atraso ---------- */
+
+function renderWayNoticeBox(appointment) {
+  const box = $("wayNoticeBox");
+  if (!box) return;
+  if (!Core.canUseWayNotice(appointment)) {
+    box.classList.add("hidden");
+    box.innerHTML = "";
+    return;
+  }
+  const badge = Core.wayNoticeBadge(appointment);
+  const mode = appointment.lembrete_caminho_modo || "automatico";
+  const showPause = mode === "automatico" || mode === "atraso";
+  const showAuto = mode === "pausado" || mode === "atraso";
+
+  box.classList.remove("hidden");
+  box.innerHTML =
+    '<div class="way-notice-head">' +
+      "<strong>Aviso a caminho</strong>" +
+      '<span class="way-badge is-' + esc(badge.tone) + '">' + esc(badge.text) + "</span>" +
+    "</div>" +
+    (badge.observation ? '<p class="way-notice-obs">' + esc(badge.observation) + "</p>" : "") +
+    '<div class="way-notice-actions">' +
+      '<button type="button" id="wayDelayBtn" class="secondary way-action-btn">Avisar atraso</button>' +
+      (showPause ? '<button type="button" id="wayPauseBtn" class="secondary way-action-btn">Pausar aviso</button>' : "") +
+      (showAuto ? '<button type="button" id="wayAutoBtn" class="secondary way-action-btn">Voltar p/ automático</button>' : "") +
+    "</div>";
+
+  $("wayDelayBtn").onclick = () => openDelayNoticeDialog(currentAppointment);
+  if (showPause) $("wayPauseBtn").onclick = () => saveWayNotice("pausado");
+  if (showAuto) $("wayAutoBtn").onclick = () => saveWayNotice("automatico");
+}
+
+function syncDelayShortcutHighlight() {
+  const selected = $("delayNewTime").value;
+  document.querySelectorAll("#delayQuickOptions [data-delay-min]").forEach(btn => {
+    const match = btn.dataset.delayTime === selected;
+    btn.classList.toggle("is-selected", match);
+    btn.setAttribute("aria-pressed", String(match));
+  });
+}
+
+function openDelayNoticeDialog(appointment) {
+  if (!appointment) return;
+  message("delayNoticeMessage", "");
+  $("delayOriginalTime").textContent = "Horário original: " + time(appointment.inicio_em);
+  document.querySelectorAll("#delayQuickOptions [data-delay-min]").forEach(btn => {
+    const targetTime = Core.addMinutesToTime(appointment.inicio_em, Number(btn.dataset.delayMin));
+    btn.dataset.delayTime = targetTime;
+    btn.title = "Previsto: " + targetTime;
+  });
+  const currentDelay = appointment.lembrete_caminho_modo === "atraso" && appointment.lembrete_caminho_novo_horario
+    ? appointment.lembrete_caminho_novo_horario
+    : Core.addMinutesToTime(appointment.inicio_em, 15);
+  $("delayNewTime").value = currentDelay;
+  $("delayObservation").value = appointment.lembrete_caminho_modo === "atraso" ? (appointment.lembrete_caminho_observacao || "") : "";
+  syncDelayShortcutHighlight();
+  $("delayNoticeDialog").showModal();
+}
+
+async function saveWayNotice(action, options = {}) {
+  if (!currentAppointment) return false;
+  let payload;
+  try {
+    payload = Core.buildWayNoticePayload(action, options);
+  } catch (err) {
+    if (action === "atraso") message("delayNoticeMessage", err.message);
+    else toast(err.message);
+    return false;
+  }
+
+  const buttons = [$("wayDelayBtn"), $("wayPauseBtn"), $("wayAutoBtn"), $("saveDelayNoticeBtn")].filter(Boolean);
+  buttons.forEach(btn => { btn.disabled = true; });
+  try {
+    const { error } = await db.from("agendamentos").update(payload).eq("id", currentAppointment.id);
+    if (error) {
+      const msg = ManageCore.friendlyError(error, "Não foi possível atualizar o aviso a caminho.");
+      if (action === "atraso") message("delayNoticeMessage", msg);
+      else toast(msg);
+      return false;
+    }
+    Object.assign(currentAppointment, payload);
+    renderWayNoticeBox(currentAppointment);
+    toast(
+      action === "atraso"
+        ? "Aviso de atraso salvo."
+        : action === "pausado"
+          ? "Aviso a caminho pausado."
+          : "Aviso voltou para automático."
+    );
+    loadAgenda();
+    return true;
+  } finally {
+    buttons.forEach(btn => { btn.disabled = false; });
+  }
 }
 
 /* ---------- Formulário ---------- */
@@ -371,6 +469,22 @@ $("confirmBtn").onclick = async () => {
   $("detailsDialog").close();
   toast("Atendimento confirmado.");
   loadAgenda();
+};
+document.querySelectorAll("#delayQuickOptions [data-delay-min]").forEach(btn => {
+  btn.onclick = () => {
+    if (btn.dataset.delayTime) $("delayNewTime").value = btn.dataset.delayTime;
+    syncDelayShortcutHighlight();
+  };
+});
+$("delayNewTime").addEventListener("input", syncDelayShortcutHighlight);
+$("delayNoticeForm").onsubmit = async event => {
+  event.preventDefault();
+  message("delayNoticeMessage", "");
+  const ok = await saveWayNotice("atraso", {
+    novoHorario: $("delayNewTime").value,
+    observacao: $("delayObservation").value
+  });
+  if (ok) $("delayNoticeDialog").close();
 };
 
 // Início: só depois que tudo acima existe.
