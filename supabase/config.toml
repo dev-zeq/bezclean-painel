@@ -6,3 +6,7 @@ verify_jwt = false
 [functions.pedir-avaliacao]
 # A função valida a sessão diretamente com o Supabase Auth.
 verify_jwt = false
+
+[functions.whatsapp-piloto]
+# O webhook valida a assinatura da Meta.
+verify_jwt = false
