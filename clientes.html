@@ -11,7 +11,7 @@
 <section class="stats"><article><span>Total de clientes</span><strong id="totalClients">0</strong></article><article><span>Com atendimento agendado</span><strong id="scheduledClients">0</strong></article><article><span>Clientes recorrentes</span><strong id="returningClients">0</strong></article></section>
 <section class="card"><div class="toolbar"><input id="search" type="search" placeholder="Buscar por nome, WhatsApp, bairro ou cidade"><div class="segmented" id="clientView" role="group" aria-label="Filtro de clientes"><button type="button" data-view="ativos" aria-pressed="true">Ativos</button><button type="button" data-view="arquivados" aria-pressed="false">Arquivados</button></div></div><div id="list" class="client-list"></div></section></main>
 <dialog id="clientDialog"><form id="clientForm" class="modal"><div class="modal-head"><div><p class="eyebrow">CADASTRO</p><h2 id="formTitle">Novo cliente</h2></div><button class="close" type="button" data-close="clientDialog">×</button></div><input id="clientId" type="hidden"><div class="grid"><label class="full">Nome completo<input id="name" required placeholder="Nome do cliente"></label><label>WhatsApp<input id="phone" required placeholder="(47) 99999-9999"></label><label>E-mail<input id="email" type="email" placeholder="Opcional"></label><label class="full">Endereço<input id="address" placeholder="Rua e número"></label><label>Bairro<input id="neighborhood" placeholder="Bairro"></label><label>Cidade<input id="city" placeholder="Cidade"></label><label class="full">Observações<textarea id="notes" rows="3" placeholder="Acesso, preferência, detalhes do imóvel…"></textarea></label></div><div class="actions"><button class="secondary" type="button" data-close="clientDialog">Cancelar</button><button class="primary" type="submit">Salvar cliente</button></div><p id="formMsg" class="msg"></p></form></dialog>
-<dialog id="details"><div class="modal"><div class="modal-head"><div><p class="eyebrow">CLIENTE</p><h2 id="detailTitle">Detalhes</h2></div><button class="close" type="button" data-close="details">×</button></div><div id="detailContent" class="detail"></div><div class="detail-actions"><button id="whatsApp" class="secondary">Abrir WhatsApp</button><button id="edit" class="primary">Editar cadastro</button><div id="clientMenu" class="action-menu-slot"></div></div></div></dialog>
+<dialog id="details"><div class="modal"><div class="modal-head"><div><p class="eyebrow">CLIENTE</p><h2 id="detailTitle">Detalhes</h2></div><button class="close" type="button" data-close="details">×</button></div><div id="detailContent" class="detail"></div><div class="detail-actions"><button id="whatsApp" class="secondary">Abrir WhatsApp</button><button id="requestReview" class="secondary" type="button">Pedir avaliação pelo WhatsApp</button><button id="edit" class="primary">Editar cadastro</button><div id="clientMenu" class="action-menu-slot"></div></div><p id="reviewStatus" class="msg" role="status"></p></div></dialog>
 <div id="toast" class="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="/assets/js/panel-session.js?v=20261123a"></script>
 <script>
@@ -41,10 +41,41 @@ function openDetails(id){
     '<div class="detail-grid"><article><span>Atendimentos</span><strong>'+appointmentsForClient.length+'</strong></article><article><span>Orçamentos</span><strong>'+quotesForClient.length+'</strong></article><article><span>Total atendido</span><strong>'+fmt(total)+'</strong></article></div>'+
     '<h3>Histórico</h3><div class="history">'+historyHtml+'</div>';
   const archived=ManageCore.isArchived(current);
+  $("requestReview").hidden=archived;
+  $("reviewStatus").textContent="";
   $("clientMenu").innerHTML=Manage.menu([{id:"archive",icon:"🗃️",label:"Arquivar cliente",hidden:archived},{id:"unarchive",icon:"♻️",label:"Reativar cliente",hidden:!archived}]);
   Manage.bindMenu($("clientMenu"),{archive:()=>setArchived(true),unarchive:()=>setArchived(false)});
   $("details").showModal();
 }
 async function setArchived(archive){const c=current;if(!c)return;let message;if(archive){const info=ManageCore.clientArchiveSummary(c.id,appointments,quotes);message=c.nome+" deixará de aparecer na lista e na seleção de novos orçamentos e agendamentos. O histórico de orçamentos e atendimentos será mantido."+(info.upcoming?" Atenção: há "+info.upcoming+" atendimento(s) agendado(s) para este cliente; eles continuam na Agenda.":"")+(info.openQuotes?" Há "+info.openQuotes+" orçamento(s) em aberto.":"")}else message=c.nome+" voltará para a lista de clientes ativos.";const ok=await Manage.confirm({title:archive?"Arquivar cliente?":"Reativar cliente?",message,confirmLabel:archive?"Arquivar":"Reativar"});if(!ok)return;const {data,error}=await db.from("clientes").update({arquivado_em:archive?new Date().toISOString():null,updated_at:new Date().toISOString()}).eq("id",c.id).select("id");if(error||!data?.length){toast(ManageCore.friendlyError(error,"Não foi possível concluir. Tente novamente."));return}$("details").close();toast(archive?"Cliente arquivado.":"Cliente reativado.");await boot()}
+$("requestReview").onclick=async()=>{
+  const client=current;
+  if(!client||ManageCore.isArchived(client))return;
+  const button=$("requestReview");
+  const status=$("reviewStatus");
+  button.disabled=true;
+  try{
+    const confirmed=await Manage.confirm({
+      title:"Enviar pedido de avaliação?",
+      message:"Enviar pelo WhatsApp para "+client.nome+" ("+(client.telefone||"sem número")+")? Confirme se o atendimento foi concluído e o cliente autorizou o contato pelo WhatsApp.",
+      confirmLabel:"Enviar avaliação"
+    });
+    if(!confirmed)return;
+    status.textContent="Enviando pedido de avaliação…";
+    const {data,error}=await db.functions.invoke("pedir-avaliacao",{body:{clientId:client.id,confirmed:true}});
+    if(error){
+      const detail=await error.context?.json?.().catch(()=>null);
+      status.textContent=detail?.error||"Não foi possível confirmar o pedido. Confira o WhatsApp antes de tentar novamente.";
+      return;
+    }
+    status.textContent=data?.status==="already_requested"?"Já existe um pedido aceito pela Meta para este cliente."
+      :data?.status==="accepted_unrecorded"?"A Meta aceitou o pedido, mas o registro ficou pendente."
+      :data?.status==="accepted"?"Pedido aceito pela Meta.":"Não foi possível confirmar o pedido.";
+  }catch{
+    status.textContent="Não foi possível confirmar o pedido. Confira o WhatsApp antes de tentar novamente.";
+  }finally{
+    button.disabled=false;
+  }
+};
 document.querySelectorAll("#clientView [data-view]").forEach(b=>b.onclick=()=>{view=b.dataset.view;render()});$("newClient").onclick=()=>openForm();$("clientForm").onsubmit=save;$("search").oninput=render;$("edit").onclick=()=>{const c=current;$("details").close();openForm(c)};$("whatsApp").onclick=()=>{const phone=(current.telefone||"").replace(/\D/g,"");if(!phone){toast("Cadastre o WhatsApp do cliente.");return}window.open("https://wa.me/"+(phone.length===11?"55":"")+phone,"_blank")};document.addEventListener("click",e=>{if(e.target.dataset.close)$(e.target.dataset.close).close()});boot();
 </script><script src="/proposta-agenda/js/icons.js?v=20261123a"></script><script src="/assets/js/agenda-assistant-audio.js?v=20261123a"></script><script src="/assets/js/agenda-assistant.js?v=20261123a"></script><script src="/pwa.js?v=20261123a"></script></body></html>

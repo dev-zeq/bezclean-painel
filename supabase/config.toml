@@ -3,3 +3,6 @@ project_id = "bezclean-painel"
 [functions.assistente-bez]
 # A função valida o token em /auth/v1/user, inclusive com as novas chaves de assinatura.
 verify_jwt = false
+[functions.pedir-avaliacao]
+# A função valida a sessão diretamente com o Supabase Auth.
+verify_jwt = false
