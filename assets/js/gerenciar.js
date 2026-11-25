@@ -67,5 +67,37 @@
     });
   }
 
-  window.Manage = { confirm: confirmAction, menu: menu, bindMenu: bindMenu };
+  async function requestReview(db, client, button, status) {
+    button.disabled = true;
+    try {
+      const confirmed = await confirmAction({
+        title: "Enviar pedido de avaliação?",
+        message: "Enviar a mensagem de avaliação pelo WhatsApp para " + client.nome + " (" +
+          (client.telefone || "sem número") + ")? Confirme se o atendimento foi concluído e o cliente autorizou o contato.",
+        confirmLabel: "Enviar pedido"
+      });
+      if (!confirmed) return;
+      status.textContent = "Enviando pedido de avaliação…";
+      const { data, error } = await db.functions.invoke("pedir-avaliacao", {
+        body: { clientId: client.id, confirmed: true }
+      });
+      if (error) {
+        const detail = await error.context?.json?.().catch(() => null);
+        status.textContent = detail?.error || "Não foi possível confirmar o pedido. Confira o WhatsApp antes de tentar novamente.";
+        return;
+      }
+      const statuses = {
+        already_requested: "Já existe um pedido aceito pela Meta para este cliente.",
+        accepted_unrecorded: "A Meta aceitou o pedido, mas o registro ficou pendente.",
+        accepted: "Pedido aceito pela Meta."
+      };
+      status.textContent = statuses[data?.status] || "Não foi possível confirmar o pedido.";
+    } catch {
+      status.textContent = "Não foi possível confirmar o pedido. Confira o WhatsApp antes de tentar novamente.";
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  window.Manage = { confirm: confirmAction, menu: menu, bindMenu: bindMenu, requestReview };
 })();

@@ -171,4 +171,30 @@ $("authForm").onsubmit=async e=>{e.preventDefault();const {error}=await db.auth.
   fillAgendaFields(appointment);
   $("appointmentDialog").showModal();
 };
-$("completeBtn").onclick=async()=>{const {error}=await db.from("agendamentos").update({status:"concluido"}).eq("id",currentAppointment.id);if(error){toast(ManageCore.friendlyError(error,"Não foi possível concluir."));return;}$("detailsDialog").close();toast("Marcado como concluído.");loadAgenda()};$("cancelBtn").onclick=async()=>{const ok=await Manage.confirm({title:"Cancelar atendimento?",message:"O atendimento continua no histórico como cancelado e o horário fica livre. Para remover um agendamento criado só para teste, use Excluir em Mais ações.",confirmLabel:"Cancelar atendimento",danger:true});if(!ok)return;const {error}=await db.from("agendamentos").update({status:"cancelado"}).eq("id",currentAppointment.id);if(error){toast(ManageCore.friendlyError(error,"Não foi possível cancelar."));return}$("detailsDialog").close();toast("Atendimento cancelado.");loadAgenda()};$("trashBtn").onclick=openTrash;$("blockBtn").onclick=()=>openAgendaBlock();$("blockForm").onsubmit=async e=>{e.preventDefault();const s=dateTime($("blockDate").value,$("blockStart").value),f=dateTime($("blockDate").value,$("blockEnd").value);if(f<=s)return message("blockMessage","O fim precisa ser depois do início.");const {error}=await db.from("bloqueios_agenda").insert({inicio_em:s.toISOString(),fim_em:f.toISOString(),motivo:$("blockReason").value||null});if(error)return message("blockMessage",error.message);$("blockDialog").close();toast("Horário bloqueado.");loadAgenda()};document.addEventListener("click",e=>{if(e.target.dataset.close)$(e.target.dataset.close).close()});
+$("completeBtn").onclick=async()=>{
+  const appointment=currentAppointment;
+  const button=$("completeBtn");
+  button.disabled=true;
+  try{
+    const {data,error}=await db.from("agendamentos").update({status:"concluido"})
+      .eq("id",appointment.id).eq("status",appointment.status).select("id").maybeSingle();
+    if(error||!data){
+      $("appointmentReviewStatus").textContent=ManageCore.friendlyError(error,"Não foi possível concluir. Reabra o atendimento e tente novamente.");
+      return;
+    }
+    if(currentAppointment===appointment&&$("detailsDialog").open){
+      appointment.status="concluido";
+      const badge=$("detailsContent").querySelector(".status");
+      badge.className="status concluido";
+      badge.textContent="Concluído";
+      renderAppointmentReview(appointment);
+      renderWayNoticeBox(appointment);
+      if(!$("appointmentReviewBtn").hidden)$("appointmentReviewBtn").focus();
+    }
+    toast("Marcado como concluído.");
+    loadAgenda();
+  }finally{
+    button.disabled=false;
+  }
+};
+$("cancelBtn").onclick=async()=>{const ok=await Manage.confirm({title:"Cancelar atendimento?",message:"O atendimento continua no histórico como cancelado e o horário fica livre. Para remover um agendamento criado só para teste, use Excluir em Mais ações.",confirmLabel:"Cancelar atendimento",danger:true});if(!ok)return;const {error}=await db.from("agendamentos").update({status:"cancelado"}).eq("id",currentAppointment.id);if(error){toast(ManageCore.friendlyError(error,"Não foi possível cancelar."));return}$("detailsDialog").close();toast("Atendimento cancelado.");loadAgenda()};$("trashBtn").onclick=openTrash;$("blockBtn").onclick=()=>openAgendaBlock();$("blockForm").onsubmit=async e=>{e.preventDefault();const s=dateTime($("blockDate").value,$("blockStart").value),f=dateTime($("blockDate").value,$("blockEnd").value);if(f<=s)return message("blockMessage","O fim precisa ser depois do início.");const {error}=await db.from("bloqueios_agenda").insert({inicio_em:s.toISOString(),fim_em:f.toISOString(),motivo:$("blockReason").value||null});if(error)return message("blockMessage",error.message);$("blockDialog").close();toast("Horário bloqueado.");loadAgenda()};document.addEventListener("click",e=>{if(e.target.dataset.close)$(e.target.dataset.close).close()});

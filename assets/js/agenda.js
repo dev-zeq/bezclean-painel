@@ -49,7 +49,7 @@ const airbnbTag = event => Core.isAirbnb(event) ? ' <b class="airbnb-tag">Airbnb
 
 async function openDetails(id, { signal, onError = toast } = {}) {
   const user = agendaUserId;
-  const query = db.from("agendamentos").select("*,clientes(nome,telefone,endereco),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone,airbnb),agendamento_itens(*)")
+  const query = db.from("agendamentos").select("*,clientes(nome,telefone,endereco,arquivado_em),apartamentos(nome,edificio,endereco,contato_nome,contato_telefone,airbnb),agendamento_itens(*)")
     .eq("id", id).is("excluido_em", null);
   if (signal) query.abortSignal(signal);
   const { data, error } = await query.single();
@@ -69,7 +69,7 @@ async function openDetails(id, { signal, onError = toast } = {}) {
     (contact ? "<p>Contato: " + esc(contact) + "</p>" : "") +
     (data.observacoes ? "<p>" + esc(data.observacoes) + "</p>" : "");
   $("confirmBtn").hidden = data.status !== "provisorio";
-  $("completeBtn").hidden = data.status === "concluido" || data.status === "cancelado";
+  renderAppointmentReview(data);
   $("cancelBtn").hidden = data.status === "cancelado";
   const block = ManageCore.appointmentBlock(data);
   $("appointmentMenu").innerHTML = block ? "" : Manage.menu([{ id: "delete", icon: "🗑️", label: "Excluir atendimento (teste)", danger: true }]);
@@ -78,6 +78,25 @@ async function openDetails(id, { signal, onError = toast } = {}) {
   renderWayNoticeBox(data);
   $("detailsDialog").showModal();
 }
+
+function reviewClient(appointment) {
+  const client = appointment?.clientes;
+  if (appointment?.status !== "concluido" || !appointment.cliente_id || !client?.telefone ||
+      ManageCore.isArchived(client)) return null;
+  return { ...client, id: appointment.cliente_id };
+}
+
+function renderAppointmentReview(appointment) {
+  const completed = appointment.status === "concluido";
+  $("completeBtn").hidden = completed || appointment.status === "cancelado";
+  $("appointmentReviewBtn").hidden = !reviewClient(appointment);
+  $("appointmentReviewStatus").textContent = "";
+}
+
+$("appointmentReviewBtn").onclick = () => {
+  const client = reviewClient(currentAppointment);
+  if (client) return Manage.requestReview(db, client, $("appointmentReviewBtn"), $("appointmentReviewStatus"));
+};
 
 /* ---------- Aviso a caminho / Atraso ---------- */
 
