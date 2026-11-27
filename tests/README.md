@@ -27,7 +27,7 @@ Consultas SQL continuam bloqueadas porque o ambiente exige aprovação e a polí
 
 Com Node.js 22.18 ou mais recente, rode `node --test tests/*.test.cjs tests/*.test.mjs`. Para validar os tipos da Edge Function, rode `deno check supabase/functions/assistente-bez/index.ts`.
 
-A prévia local abre com `node tests/agenda-preview.mjs` em [127.0.0.1:8126](http://127.0.0.1:8126/). Entre com `teste@example.test` e a senha `agenda-teste`. Os dados são fictícios e as alterações duram até reiniciar o servidor. O teste de navegador usa os componentes reais e uma API local. A interpretação da pergunta e a persistência das cotas são simuladas.
+A prévia local abre com `node tests/agenda-preview.mjs` em [127.0.0.1:8126](http://127.0.0.1:8126/). Entre com `teste@example.test` e a senha `agenda-teste`. Os dados são fictícios e as alterações duram até reiniciar o servidor. O teste de navegador usa os componentes reais e uma API local. A IA e a persistência das cotas são simuladas: a prévia responde a "agenda de hoje", "horários livres", "Itapema", "mensagem/lembrete" (botão de WhatsApp) e pedidos de agendamento usando as ferramentas reais do servidor. Sem acesso ao CDN, rode com `BEZ_PREVIEW_SDK=<caminho do supabase.js UMD>`.
 
 1. Alterne Dia, Semana e Mês e abra o atendimento de teste.
 2. Edite o valor, agende uma faxina num horário ocupado e confira a opção de continuar após o aviso de conflito.

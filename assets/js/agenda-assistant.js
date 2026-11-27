@@ -14,9 +14,10 @@
   const STATUS_LABELS = { confirmado: "Confirmado", provisorio: "A confirmar" };
   const SUGGESTIONS = [
     { label: "Agenda de hoje", prompt: "Qual a agenda de hoje?" },
-    { label: "Horários livres hoje", prompt: "Quais horários livres hoje?" },
-    { label: "Agenda de amanhã", prompt: "Qual a agenda de amanhã?" },
-    { label: "Atendimentos em Itapema", prompt: "Quais atendimentos em Itapema?" }
+    { label: "Horários livres amanhã", prompt: "Quais horários livres amanhã?" },
+    { label: "Orçamentos em aberto", prompt: "Quais orçamentos estão em aberto ou faltam agendar?" },
+    { label: "Clientes para chamar", prompt: "Quais clientes estão há mais de 6 meses sem atendimento?" },
+    { label: "Faturamento do mês", prompt: "Quanto faturamos este mês?" }
   ];
 
   function formatSeconds(sec) {
@@ -52,8 +53,8 @@
     <div id="agendaMessages" class="bez-messages" role="log" aria-label="Mensagens da conversa" tabindex="0">
       <div class="bez-msg is-assistant">
         <div class="bez-bubble">
-          <p>Pergunte sobre horários e clientes por cidade, ou peça para agendar por texto ou áudio.</p>
-          <p id="agendaAssistantHelp">No áudio, fale os serviços, nome do cliente, endereço, data e horário. Nada é salvo antes da sua confirmação.</p>
+          <p>Pergunte sobre agenda, clientes, orçamentos e faturamento, peça mensagens de WhatsApp ou peça para agendar por texto ou áudio.</p>
+          <p id="agendaAssistantHelp">Nada é salvo nem enviado sem você tocar em confirmar ou abrir o WhatsApp.</p>
         </div>
       </div>
     </div>
@@ -62,7 +63,7 @@
     ).join("")}</div>
     <form id="agendaAssistantForm" class="bez-composer">
       <div id="agendaTextRow" class="bez-input-row">
-        <input id="agendaQuestion" class="bez-input" name="question" type="text" maxlength="600" autocomplete="off" placeholder="Pergunte ou peça para agendar…" aria-label="Pergunta ou pedido para a Agenda" aria-describedby="agendaAssistantHelp">
+        <input id="agendaQuestion" class="bez-input" name="question" type="text" maxlength="600" autocomplete="off" placeholder="Pergunte ou peça algo…" aria-label="Pergunta ou pedido para o Assistente Bez" aria-describedby="agendaAssistantHelp">
         <button id="agendaAssistantMic" class="bez-mic-btn" type="button" aria-label="Gravar áudio" title="Gravar áudio"></button>
         <button id="agendaAssistantSend" class="bez-send-btn" type="submit" aria-label="Enviar mensagem" title="Enviar"></button>
       </div>
@@ -235,6 +236,7 @@
     agendaAssistantRequest?.abort();
     agendaAssistantDetailRequest?.abort();
     agendaAssistantRequest = null;
+    chatHistory = [];
     agendaAssistantForm.reset();
     setBusy(false);
     agendaMessages.replaceChildren(agendaWelcome);
@@ -628,19 +630,9 @@
     renderCard();
   }
 
-  function renderAgendaAnswer(bubble, data) {
-    if (data?.bookingDraft) {
-      renderBookingDraftCard(bubble, data.bookingDraft, data.answer);
-      return;
-    }
-
-    const listing = data?.agenda;
-    if (typeof listing?.period !== "string" || !Array.isArray(listing.entries) || !listing.entries.length) {
-      bubble.textContent = typeof data?.answer === "string" ? data.answer : "Não foi possível concluir a consulta.";
-      return;
-    }
-
+  function renderAgendaList(bubble, listing) {
     const period = document.createElement("p");
+    period.className = "bez-agenda-period";
     period.textContent = listing.period;
     const entries = document.createElement("ul");
     entries.className = "bez-agenda-results";
@@ -673,7 +665,7 @@
       }
       entries.append(row);
     }
-    bubble.replaceChildren(period, entries);
+    bubble.append(period, entries);
     if (typeof listing.note === "string" && listing.note) {
       const note = document.createElement("p");
       note.textContent = listing.note;
@@ -682,7 +674,55 @@
     bubble.append(status);
   }
 
-  async function invokeAssistant(body, userBubble, thinkingText, voiceControls) {
+  function renderWhatsappLinks(bubble, links) {
+    const list = document.createElement("div");
+    list.className = "bez-wa-links";
+    for (const link of links) {
+      // Só links do WhatsApp montados pelo servidor viram botão.
+      if (typeof link?.url !== "string" || !link.url.startsWith("https://wa.me/") || typeof link.label !== "string") continue;
+      const anchor = document.createElement("a");
+      anchor.className = "bez-action-card bez-wa-link";
+      anchor.href = link.url;
+      anchor.target = "_blank";
+      anchor.rel = "noopener noreferrer";
+      const label = document.createElement("span");
+      label.textContent = link.label;
+      const action = document.createElement("span");
+      action.className = "bez-action-cta";
+      action.textContent = "Abrir";
+      anchor.append(label, action);
+      list.append(anchor);
+    }
+    if (list.childElementCount) bubble.append(list);
+  }
+
+  function renderAgendaAnswer(bubble, data) {
+    const answerText = typeof data?.answer === "string" && data.answer ? data.answer : "Não foi possível concluir a consulta.";
+    if (data?.bookingDraft) {
+      renderBookingDraftCard(bubble, data.bookingDraft, answerText);
+      if (Array.isArray(data.links) && data.links.length) renderWhatsappLinks(bubble, data.links);
+      return;
+    }
+    const text = document.createElement("p");
+    text.textContent = answerText;
+    bubble.replaceChildren(text);
+    const listing = data?.agenda;
+    if (typeof listing?.period === "string" && Array.isArray(listing.entries) && listing.entries.length) {
+      renderAgendaList(bubble, listing);
+    }
+    if (Array.isArray(data?.links) && data.links.length) renderWhatsappLinks(bubble, data.links);
+  }
+
+  // Memória curta da conversa: só nesta aba, some ao recarregar ou sair.
+  const MAX_HISTORY = 8;
+  let chatHistory = [];
+  function rememberTurn(userText, answerText) {
+    if (typeof userText !== "string" || !userText.trim() || typeof answerText !== "string" || !answerText.trim()) return;
+    chatHistory.push({ role: "user", content: userText.trim() }, { role: "assistant", content: answerText.trim() });
+    chatHistory = chatHistory.slice(-MAX_HISTORY);
+  }
+
+  async function invokeAssistant(body, userText, thinkingText, voiceControls) {
     const request = new AbortController();
     agendaAssistantRequest = request;
     setBusy(true);
@@ -704,6 +744,7 @@
       }
       if (voiceControls) voiceControls.setTranscript(data?.transcript);
       renderAgendaAnswer(answer, data);
+      rememberTurn(voiceControls ? data?.transcript : userText, data?.answer);
     } catch {
       if (voiceControls) voiceControls.setTranscript("");
       if (!request.signal.aborted) answer.textContent = "O Assistente Bez está indisponível no momento. Tente mais tarde.";
@@ -719,10 +760,10 @@
   function submitTextQuestion(question) {
     const trimmed = String(question || "").trim();
     if (!trimmed || agendaAssistantRequest || isRecording) return;
-    const bubble = appendAgendaMessage(trimmed, true);
+    appendAgendaMessage(trimmed, true);
     agendaQuestion.value = "";
     agendaQuestion.focus({ preventScroll: true });
-    void invokeAssistant({ question: trimmed, allowScheduling: true }, bubble, "Consultando a Agenda…", null);
+    void invokeAssistant({ question: trimmed, history: chatHistory }, trimmed, "Pensando…", null);
   }
 
   async function sendRecordedVoice() {
@@ -740,6 +781,7 @@
       scrollAgendaMessages();
       const formData = new FormData();
       formData.append("audio", blob, "audio.wav");
+      formData.append("history", JSON.stringify(chatHistory));
       await invokeAssistant(formData, null, "Transcrevendo áudio…", voiceMsg);
     } catch (err) {
       isProcessingAudio = false;

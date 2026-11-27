@@ -1,5 +1,13 @@
 # Progresso — Painel Bezclean
 
+## Assistente Bez com ferramentas — 27/11/2026
+
+- O Assistente Bez passou a funcionar como a assistente do painel da Elis: o DeepSeek escolhe entre 10 ferramentas (agenda, horários livres, clientes, clientes para retorno, orçamentos pendentes, faturamento, tabela de preços, modelos de mensagem, link de WhatsApp e rascunho de agendamento). Detalhes em [Assistente Bez](supabase/assistente-bez.md).
+- Decisão de privacidade: os dados consultados (inclusive nome, telefone e endereço de clientes) agora vão ao DeepSeek para ele responder. Antes só ia o texto falado/digitado.
+- Nada é gravado nem enviado pela IA: agendamento continua no cartão "Confirmar e agendar" e mensagens viram botão que abre o WhatsApp.
+- A conversa lembra as últimas 8 mensagens, só na aba aberta.
+- Testes Node (41) e checagem de tipos da function com Deno passaram; fluxo conferido no navegador pela prévia local. **Ainda não testado com o DeepSeek real nem publicado.**
+
 ## Oferta na Agenda e Assistente no painel — 20/11/2026
 
 - O Assistente Bez aparece nas sete páginas com sessão ativa. Em outras páginas, o resultado abre os detalhes na Agenda pelo vínculo do atendimento.
