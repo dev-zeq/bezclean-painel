@@ -701,6 +701,7 @@
     if (data?.bookingDraft) {
       renderBookingDraftCard(bubble, data.bookingDraft, answerText);
       if (Array.isArray(data.links) && data.links.length) renderWhatsappLinks(bubble, data.links);
+      renderActionCards(bubble, data.acoes);
       return;
     }
     const text = document.createElement("p");
@@ -711,6 +712,220 @@
       renderAgendaList(bubble, listing);
     }
     if (Array.isArray(data?.links) && data.links.length) renderWhatsappLinks(bubble, data.links);
+    renderActionCards(bubble, data?.acoes);
+  }
+
+  /* ---------- Cartões de ação (orçamento, agendar orçamento, bloqueio, concluir) ---------- */
+  // O servidor só monta o cartão. Gravar acontece aqui, com a sessão da equipe,
+  // pelos mesmos caminhos dos botões do painel, e só depois do toque em confirmar.
+
+  const newId = () => typeof crypto?.randomUUID === "function"
+    ? crypto.randomUUID()
+    : "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c => (c ^ (Math.random() * 16) >> (c / 4)).toString(16));
+  const errorText = (error, fallback) => (error && error.message) || fallback;
+
+  const REVIEW_STATUS = {
+    already_requested: "O pedido de avaliação já tinha sido enviado a este cliente.",
+    accepted_unrecorded: "A Meta aceitou o pedido de avaliação, mas o registro ficou pendente.",
+    accepted: "Pedido de avaliação enviado."
+  };
+
+  const ACTION_EXECUTORS = {
+    async bloqueio(payload) {
+      const { error } = await panelSupabase.from("bloqueios_agenda")
+        .insert({ inicio_em: payload.inicio_em, fim_em: payload.fim_em, motivo: payload.motivo || null });
+      if (error) throw new Error(errorText(error, "Não foi possível bloquear."));
+      return { message: "Horário bloqueado." };
+    },
+
+    async concluir(payload) {
+      const { data, error } = await panelSupabase.from("agendamentos").update({ status: "concluido" })
+        .eq("id", payload.agendamento_id).eq("status", payload.status_atual).select("id").maybeSingle();
+      if (error) throw new Error(errorText(error, "Não foi possível concluir."));
+      if (!data) throw new Error("O atendimento mudou desde a pergunta. Abra a Agenda e confira.");
+      let message = "Atendimento concluído.";
+      if (payload.pedir_avaliacao && payload.cliente_id) {
+        try {
+          const { data: review, error: reviewError } = await panelSupabase.functions.invoke("pedir-avaliacao", {
+            body: { clientId: payload.cliente_id, confirmed: true }
+          });
+          if (reviewError) {
+            const detail = await reviewError.context?.json?.().catch(() => null);
+            message += " " + (detail?.error || "O pedido de avaliação não foi confirmado: confira o WhatsApp antes de reenviar.");
+          } else {
+            message += " " + (REVIEW_STATUS[review?.status] || "O pedido de avaliação não foi confirmado.");
+          }
+        } catch {
+          message += " O pedido de avaliação não foi confirmado: confira o WhatsApp antes de reenviar.";
+        }
+      }
+      return { message, appointmentId: payload.agendamento_id };
+    },
+
+    async orcamento(payload) {
+      let clienteId = payload.cliente_id;
+      if (!clienteId && payload.novo_cliente) {
+        const { data, error } = await panelSupabase.from("clientes").insert({
+          nome: payload.novo_cliente.nome, telefone: payload.novo_cliente.telefone, endereco: payload.novo_cliente.endereco || null
+        }).select("id").single();
+        if (error) throw new Error(errorText(error, "Não foi possível cadastrar o cliente."));
+        clienteId = data.id;
+        payload.cliente_id = clienteId; // nova tentativa não duplica o cliente
+      }
+      const { data: quote, error } = await panelSupabase.from("orcamentos")
+        .insert({ ...payload.orcamento, cliente_id: clienteId }).select("id").single();
+      if (error) throw new Error(errorText(error, "Não foi possível criar o orçamento."));
+      const { error: itemError } = await panelSupabase.from("orcamento_itens")
+        .insert(payload.itens.map(item => ({ ...item, orcamento_id: quote.id })));
+      if (itemError) {
+        await panelSupabase.from("orcamentos").delete().eq("id", quote.id);
+        throw new Error(errorText(itemError, "Não foi possível gravar os itens."));
+      }
+      return { message: "Orçamento criado como rascunho.", href: "./orcamentos.html", hrefLabel: "Ver orçamentos" };
+    },
+
+    async agendar_orcamento(payload) {
+      let appointmentId;
+      if (payload.campanha) {
+        const { data, error } = await panelSupabase.rpc("campanha_agendar_orcamento", {
+          p_orcamento_id: payload.orcamento_id, p_inicio: payload.inicio_em, p_fim: payload.fim_em, p_endereco: payload.endereco
+        });
+        if (error) throw new Error(errorText(error, "Não foi possível agendar."));
+        appointmentId = typeof data === "string" ? data : data?.id || null;
+      } else {
+        payload.rascunho_id ||= newId(); // a mesma tentativa reaproveita o agendamento já salvo
+        const { data, error } = await panelSupabase.rpc("agendamento_salvar_direto", {
+          p_id: payload.rascunho_id,
+          p_edicao: false,
+          p_agendamento: {
+            tipo: "estofados", cliente_id: payload.cliente_id, inicio_em: payload.inicio_em, fim_em: payload.fim_em,
+            endereco: payload.endereco, descricao_servico: payload.descricao_servico, valor: payload.valor,
+            observacoes: payload.observacoes, status: "confirmado"
+          },
+          p_itens: payload.itens,
+          p_novo_cliente: null
+        });
+        if (error) throw new Error(errorText(error, "Não foi possível agendar."));
+        appointmentId = typeof data === "string" && data ? data : payload.rascunho_id;
+        const { error: quoteError } = await panelSupabase.from("orcamentos")
+          .update({ status: "aprovado", agendamento_id: appointmentId, updated_at: new Date().toISOString() })
+          .eq("id", payload.orcamento_id).is("agendamento_id", null);
+        if (quoteError) return { message: "Agendado, mas não consegui marcar o orçamento como aprovado. Confira em Orçamentos.", appointmentId };
+      }
+      return { message: "Orçamento agendado.", appointmentId };
+    }
+  };
+
+  function renderActionCard(msgEl, action) {
+    if (!action || typeof action.tipo !== "string" || !ACTION_EXECUTORS[action.tipo] || !Array.isArray(action.linhas)) return;
+    const card = document.createElement("div");
+    card.className = "bez-draft-card bez-action-confirm";
+    const head = document.createElement("div");
+    head.className = "bez-draft-head";
+    const title = document.createElement("span");
+    title.className = "bez-draft-type";
+    title.textContent = String(action.titulo || "Ação");
+    head.append(title);
+    const rows = document.createElement("div");
+    rows.className = "bez-draft-rows";
+    for (const line of action.linhas) {
+      if (!Array.isArray(line)) continue;
+      const row = document.createElement("div");
+      row.className = "bez-draft-row";
+      const key = document.createElement("span");
+      key.className = "bez-draft-k";
+      key.textContent = String(line[0] ?? "");
+      const value = document.createElement("div");
+      value.className = "bez-draft-v";
+      String(line[1] ?? "").split("\n").forEach((part, idx) => {
+        const el = document.createElement(idx === 0 ? "strong" : "div");
+        el.textContent = part;
+        value.append(el);
+      });
+      row.append(key, value);
+      rows.append(row);
+    }
+    const warnings = document.createElement("div");
+    warnings.className = "bez-draft-warning";
+    warnings.setAttribute("role", "status");
+    for (const text of Array.isArray(action.avisos) ? action.avisos : []) {
+      const p = document.createElement("p");
+      p.textContent = String(text);
+      warnings.append(p);
+    }
+    const errorBox = document.createElement("p");
+    errorBox.className = "bez-draft-error";
+    errorBox.setAttribute("role", "alert");
+    const buttons = document.createElement("div");
+    buttons.className = "bez-draft-actions";
+    const cancel = document.createElement("button");
+    cancel.type = "button";
+    cancel.className = "bez-draft-edit";
+    cancel.textContent = "Cancelar";
+    const confirm = document.createElement("button");
+    confirm.type = "button";
+    confirm.className = "bez-draft-confirm";
+    const confirmLabel = String(action.confirmar || "Confirmar");
+    confirm.textContent = confirmLabel;
+    buttons.append(cancel, confirm);
+    card.append(head, rows, warnings, errorBox, buttons);
+    msgEl.classList.add("has-draft");
+    msgEl.append(card);
+
+    const finish = (text, extra) => {
+      const done = document.createElement("div");
+      done.className = "bez-draft-saved";
+      const p = document.createElement("p");
+      p.textContent = text;
+      done.append(p);
+      if (extra) done.append(extra);
+      buttons.replaceWith(done);
+      errorBox.remove();
+    };
+    cancel.onclick = () => finish("Cancelado. Nada foi alterado.");
+    let busy = false;
+    confirm.onclick = async () => {
+      if (busy) return;
+      busy = true;
+      confirm.disabled = cancel.disabled = true;
+      confirm.textContent = "Salvando…";
+      errorBox.textContent = "";
+      try {
+        const result = await ACTION_EXECUTORS[action.tipo](action.payload || {});
+        let extra = null;
+        if (result.appointmentId) {
+          extra = document.createElement(onAgenda ? "button" : "a");
+          extra.className = "bez-draft-open-btn";
+          extra.textContent = "Ver atendimento";
+          if (onAgenda) {
+            extra.type = "button";
+            const status = document.createElement("span");
+            extra.onclick = () => openAssistantAppointment(result.appointmentId, extra, status);
+          } else {
+            extra.href = "./?atendimento=" + encodeURIComponent(result.appointmentId);
+          }
+        } else if (result.href) {
+          extra = document.createElement("a");
+          extra.className = "bez-draft-open-btn";
+          extra.href = result.href;
+          extra.textContent = result.hrefLabel || "Abrir";
+        }
+        finish("✅ " + result.message, extra);
+        if (typeof toast === "function") toast(result.message);
+        if (onAgenda && typeof loadAgenda === "function") loadAgenda();
+      } catch (error) {
+        errorBox.textContent = "❌ " + (error?.message || "Não foi possível concluir agora.");
+        confirm.textContent = confirmLabel;
+        confirm.disabled = cancel.disabled = false;
+        busy = false;
+      }
+      scrollAgendaMessages();
+    };
+  }
+
+  function renderActionCards(bubble, actions) {
+    if (!Array.isArray(actions)) return;
+    actions.slice(0, 5).forEach(action => renderActionCard(bubble.parentElement, action));
   }
 
   // Memória curta da conversa: só nesta aba, some ao recarregar ou sair.

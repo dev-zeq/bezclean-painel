@@ -18,12 +18,20 @@ O Assistente Bez segue o modelo da assistente da Elis: o DeepSeek (`deepseek-fla
 | `modelos_mensagem` | Modelos da página Mensagens (sem os de campanha). | Não |
 | `link_whatsapp` | Monta o botão `wa.me` com a mensagem pronta (máx. 10 por resposta). **Não envia**: a equipe abre o WhatsApp e envia. | Não |
 | `propor_agendamento` | Mesmo rascunho de antes (`buildBookingDraft`): tabela de preços, Oferta 40%, cliente/apartamento e conflitos. | Não: só grava quando a equipe toca em **Confirmar e agendar** (`agendamento_salvar_direto`) |
+| `propor_orcamento` | Cartão de orçamento novo (rascunho): cliente existente ou novo (com WhatsApp), preços da tabela (`valor_normal`), Oferta 40% em sofás, validade opcional. | No **Confirmar**: `clientes` (se novo) → `orcamentos` → `orcamento_itens`, como a página de Orçamentos; se os itens falharem, o orçamento é apagado |
+| `propor_agendar_orcamento` | Cartão para agendar um orçamento existente com os mesmos itens e valor, com aviso de conflito. | No **Confirmar**: `agendamento_salvar_direto` + orçamento vira `aprovado` com `agendamento_id`; orçamento de campanha usa `campanha_agendar_orcamento` |
+| `propor_bloqueio` | Cartão para bloquear horário ou dia inteiro, avisando o que já existe no horário. | No **Confirmar**: insert em `bloqueios_agenda` |
+| `propor_concluir` | Cartão para marcar atendimento como concluído e, opcionalmente, pedir avaliação (só cliente ativo com WhatsApp válido). | No **Confirmar**: `status = concluido` só se o status não mudou; depois a function `pedir-avaliacao` (uma vez por cliente) |
+
+**Como as ações funcionam:** o servidor valida e monta o cartão (dados faltando, cliente ambíguo, item sem preço, data no passado ou orçamento já agendado voltam como erro para a IA perguntar). Quem grava é o navegador, com a sessão da própria equipe e pelos mesmos caminhos dos botões do painel, só depois do toque em confirmar. "Cancelar" não altera nada. Máximo de 5 cartões por resposta.
+
+**Permissões (Configurações → Assistente Bez):** três chaves, guardadas em `user_metadata.assistente` (o que nunca foi configurado vale como ligado): **Consultar**, **Redigir mensagens** e **Agir com confirmação**. O servidor só entrega à IA as ferramentas liberadas e confere de novo antes de executar; com tudo desligado, responde sem chamar a IA nem gastar cota.
 
 Erros de uma ferramenta (período grande demais, telefone inválido, resultado acima de 20 mil caracteres) voltam para o modelo como mensagem, e ele explica ou tenta de novo com um filtro menor. O tempo total por pergunta é limitado a 110 s.
 
 **Memória da conversa:** o navegador manda as últimas 8 mensagens (só texto, até 1.500 caracteres cada) junto com a pergunta, para entender "e amanhã?". Ela fica só na memória da aba e some ao recarregar ou sair. O servidor não guarda conversas.
 
-**Fora do escopo, de propósito:** alterar, cancelar, excluir, criar orçamento, bloquear horários e mudar status. A próxima fase prevista é criar orçamento por voz, transformar orçamento em agendamento, bloquear horários e concluir atendimento com pedido de avaliação, sempre com cartão de confirmação.
+**Fora do escopo, de propósito:** editar, remarcar, cancelar e excluir.
 
 ## Privacidade e limites
 
@@ -36,9 +44,9 @@ Mensagens aceitam até 600 caracteres, sem e-mails ou links (áudios WAV/Ogg at�
 ## Atualização em produção, após aprovação
 
 1. Confirme que `DEEPSEEK_API_KEY` segue configurada nos segredos do projeto.
-2. Publique a Edge Function `assistente-bez` com **três** arquivos: `index.ts`, `core.mjs` e `ferramentas.mjs`. Não há migração nova.
-3. Publique o painel (cache `20261127a`).
-4. Teste com a conta real: "agenda de hoje", "orçamentos em aberto", "clientes há mais de 6 meses sem atendimento", "faturamento do mês", "escreve um lembrete para <cliente>" (o botão abre o WhatsApp sem enviar) e um agendamento por áudio (o cartão aparece e nada é salvo antes de confirmar).
+2. Publique a Edge Function `assistente-bez` com **quatro** arquivos: `index.ts`, `core.mjs`, `ferramentas.mjs` e `acoes.mjs`. Não há migração nova.
+3. Publique o painel (cache `20261127b`).
+4. Teste com a conta real: "agenda de hoje", "orçamentos em aberto", "clientes há mais de 6 meses sem atendimento", "faturamento do mês", "escreve um lembrete para <cliente>" (o botão abre o WhatsApp sem enviar) e um agendamento por áudio (o cartão aparece e nada é salvo antes de confirmar). Depois, um cartão de cada ação: bloqueio de teste (apague em Indisponíveis), orçamento de teste, agendar esse orçamento, concluir um atendimento sem avaliação e, por fim, desligar "Agir" em Configurações e ver a assistente recusar.
 5. Se o DeepSeek não aceitar ferramentas no modelo `deepseek-flash`, a resposta volta "indisponível": nesse caso reverta só a function (passo de reversão abaixo).
 
 ## Validação antes da publicação

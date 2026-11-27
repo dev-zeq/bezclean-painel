@@ -7,6 +7,7 @@
 - Nada é gravado nem enviado pela IA: agendamento continua no cartão "Confirmar e agendar" e mensagens viram botão que abre o WhatsApp.
 - A conversa lembra as últimas 8 mensagens, só na aba aberta.
 - Testes Node (41) e checagem de tipos da function com Deno passaram; fluxo conferido no navegador pela prévia local. **Ainda não testado com o DeepSeek real nem publicado.**
+- Fase 2 (mesmo dia): cartões de ação com confirmação para criar orçamento, agendar orçamento, bloquear horário e concluir atendimento (com pedido de avaliação opcional), além das chaves Consultar / Redigir / Agir em Configurações. O navegador grava pelos mesmos caminhos do painel, só depois do toque em confirmar. Testes Node (48) e checagem Deno passaram; os quatro cartões foram confirmados na prévia local e gravaram como esperado.
 
 ## Oferta na Agenda e Assistente no painel — 20/11/2026
 

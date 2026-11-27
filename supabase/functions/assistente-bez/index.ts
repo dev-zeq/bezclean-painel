@@ -6,8 +6,17 @@ import {
   validateSchedulingText
 } from "./core.mjs";
 import {
-  FERRAMENTAS,
+  AcaoInvalida,
+  idValido,
+  montarAgendarOrcamento,
+  montarBloqueio,
+  montarConcluir,
+  montarOrcamento
+} from "./acoes.mjs";
+import {
   MAX_RODADAS,
+  ferramentasPermitidas,
+  permissoes,
   clientesParaRetorno,
   filtrarLocal,
   linkWhatsapp,
@@ -34,6 +43,7 @@ const rowLimit = 200;
 const bodyLimit = 24 * 1024;
 const toolResultLimit = 20000;
 const maxLinksPerAnswer = 10;
+const maxActionsPerAnswer = 5;
 const totalDeadlineMs = 110000;
 const audioBodyLimit = 4 * 1024 * 1024;
 
@@ -139,6 +149,13 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
       if (!auth.ok) throw new Error("Autenticação indisponível");
       const user = await auth.json();
       if (typeof user?.id !== "string" || user.is_anonymous) throw new RequestError(401, "Entre no painel para usar o assistente.");
+
+      const perm = permissoes(user?.user_metadata);
+      if (!perm.consultar && !perm.redigir && !perm.agir) {
+        return json({ answer: "O Assistente Bez está desligado. Ligue em Configurações → Assistente Bez." }, 200);
+      }
+      const allowedTools = ferramentasPermitidas(perm);
+      const allowedNames = new Set(allowedTools.map(t => t.function.name));
 
       const contentType = (request.headers.get("content-type") || "").toLowerCase();
       const isMultipart = contentType.includes("multipart/form-data");
@@ -253,6 +270,23 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
       let bookingDraft: unknown = null;
       let draftAnswer: string | null = null;
       const links: { label: string; url: string }[] = [];
+      const actions: Record<string, unknown>[] = [];
+
+      function addAction(card: Record<string, any>) {
+        if (actions.length >= maxActionsPerAnswer) throw new ToolError("Limite de " + maxActionsPerAnswer + " cartões por resposta.");
+        actions.push(card);
+        return {
+          cartao_exibido: true,
+          salvo: false,
+          resumo: card.linhas.map((l: string[]) => l[0] + ": " + l[1]).join(" | "),
+          avisos: card.avisos,
+          observacao: "Nada foi gravado. A equipe confere e toca em \"" + card.confirmar + "\"."
+        };
+      }
+
+      async function catalogRows() {
+        return await rest("catalogo_precos?select=id,nome,valor,valor_normal,categoria,tipo&ativo=eq.true&tipo=in.(base,adicional)&limit=300");
+      }
 
       const tools: Record<string, (args: Record<string, any>) => Promise<unknown>> = {
         async ver_agenda(args) {
@@ -380,7 +414,7 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
           const [clients, apartments, catalog, dayEvents, dayBlocks] = await Promise.all([
             rest("clientes?select=id,nome,telefone,endereco,bairro,cidade,arquivado_em&arquivado_em=is.null&limit=1000"),
             rest("apartamentos?select=id,nome,edificio,endereco,airbnb,ativo&ativo=eq.true&limit=200"),
-            rest("catalogo_precos?select=id,nome,valor,categoria,tipo&ativo=eq.true&tipo=in.(base,adicional)&limit=300"),
+            catalogRows(),
             dayRange
               ? readRows("agendamentos", "id,tipo,status,inicio_em,fim_em,excluido_em,clientes(nome),apartamentos(nome,airbnb)", dayRange.start, dayRange.end, activeFilter)
               : [],
@@ -401,12 +435,58 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
             servicos: d.descricao_servico,
             valor: d.valor
           };
+        },
+
+        async propor_orcamento(args) {
+          const [clients, catalog] = await Promise.all([
+            rest("clientes?select=id,nome,telefone,endereco,bairro,cidade,arquivado_em&arquivado_em=is.null&limit=1000"),
+            catalogRows()
+          ]);
+          return addAction(montarOrcamento(args, { clientes: clients, catalogo: catalog, oferta40: offer40 }, nowDate.getTime()));
+        },
+
+        async propor_agendar_orcamento(args) {
+          if (!idValido(args.orcamento_id)) throw new ToolError("orcamento_id inválido: pegue em orcamentos_pendentes.");
+          const [quote] = await rest("orcamentos?" + new URLSearchParams({
+            select: "id,cliente_id,status,valor_total,endereco,observacoes,agendamento_id,campanha_cliente_id,excluido_em,clientes(nome),orcamento_itens(catalogo_preco_id,nome,quantidade,valor_unitario,valor_total,valor_original,observacoes)",
+            id: "eq." + args.orcamento_id, limit: "1"
+          }));
+          const day = typeof args.data === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.data) ? range({ inicio: args.data, fim: args.data }) : null;
+          const [events, blocks] = day
+            ? await Promise.all([
+              readRows("agendamentos", "id,tipo,status,inicio_em,fim_em,excluido_em,clientes(nome),apartamentos(nome)", day.start, day.end, activeFilter),
+              readRows("bloqueios_agenda", "inicio_em,fim_em,motivo", day.start, day.end)
+            ])
+            : [[], []];
+          return addAction(montarAgendarOrcamento(quote, args, { eventos: events, bloqueios: blocks }, nowDate.getTime()));
+        },
+
+        async propor_bloqueio(args) {
+          const day = typeof args.data === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.data) ? range({ inicio: args.data, fim: args.data }) : null;
+          const [events, blocks] = day
+            ? await Promise.all([
+              readRows("agendamentos", "id,tipo,status,inicio_em,fim_em,excluido_em,clientes(nome),apartamentos(nome)", day.start, day.end, activeFilter),
+              readRows("bloqueios_agenda", "inicio_em,fim_em,motivo", day.start, day.end)
+            ])
+            : [[], []];
+          return addAction(montarBloqueio(args, { eventos: events, bloqueios: blocks }, nowDate.getTime()));
+        },
+
+        async propor_concluir(args) {
+          if (!idValido(args.agendamento_id)) throw new ToolError("agendamento_id inválido: pegue em ver_agenda.");
+          const [event] = await rest("agendamentos?" + new URLSearchParams({
+            select: "id,tipo,status,inicio_em,fim_em,descricao_servico,valor,cliente_id,excluido_em,clientes(nome,telefone,arquivado_em),apartamentos(nome)",
+            id: "eq." + args.agendamento_id, limit: "1"
+          }));
+          return addAction(montarConcluir(event, args.pedir_avaliacao === true, nowDate.getTime()));
         }
       };
 
       async function runTool(name: string, rawArgs: string) {
         const tool = tools[name];
         if (!tool) return { erro: "Ferramenta desconhecida." };
+        // Conferido de novo aqui: o modelo só recebe as liberadas, mas a regra vale no servidor.
+        if (!allowedNames.has(name)) return { erro: "Desligado pela equipe em Configurações → Assistente Bez." };
         let args: Record<string, any> = {};
         try {
           args = rawArgs ? JSON.parse(rawArgs) : {};
@@ -421,7 +501,7 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
             ? { erro: "Resultado grande demais. Refaça com um período ou filtro menor." }
             : result;
         } catch (error) {
-          if (error instanceof ToolError) return { erro: error.message };
+          if (error instanceof ToolError || error instanceof AcaoInvalida) return { erro: error.message };
           return { erro: "Não foi possível ler esses dados agora." };
         }
       }
@@ -436,7 +516,7 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
           body: JSON.stringify({
             model: "deepseek-flash", thinking: { type: "disabled" }, temperature: 0.3, max_tokens: 1200,
             messages,
-            ...(allowTools ? { tools: FERRAMENTAS, tool_choice: "auto" } : {})
+            ...(allowTools ? { tools: allowedTools, tool_choice: "auto" } : {})
           })
         });
         if (!response.ok) throw new Error("Provedor indisponível");
@@ -447,7 +527,7 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
       }
 
       const messages: any[] = [
-        { role: "system", content: promptSistema(nowDate) },
+        { role: "system", content: promptSistema(nowDate, perm) },
         ...history,
         { role: "user", content: question }
       ];
@@ -472,7 +552,8 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
         answer,
         ...(agenda ? { agenda } : {}),
         ...(bookingDraft ? { bookingDraft } : {}),
-        ...(links.length ? { links } : {})
+        ...(links.length ? { links } : {}),
+        ...(actions.length ? { acoes: actions } : {})
       }, 200);
     } catch (error) {
       if (error instanceof RequestError) return json({ error: error.message }, error.status, error.retryAfter);

@@ -149,7 +149,7 @@ function tokenizeItem(value) {
   return words.filter(w => !STOP_WORDS.has(w));
 }
 
-function isSofaName(name) {
+export function isSofaName(name) {
   return /(^|[^a-z])sofas?([^a-z]|$)/.test(normBasic(name));
 }
 
@@ -165,7 +165,7 @@ function formatSaoPauloIso(ms) {
   return { ymd, hm, iso: ymd + "T" + hm + ":00-03:00" };
 }
 
-function combineAddress(base, neighborhood, city) {
+export function combineAddress(base, neighborhood, city) {
   const parts = [];
   const baseNorm = normBasic(base);
   if (base) parts.push(base);
@@ -174,7 +174,7 @@ function combineAddress(base, neighborhood, city) {
   return parts.join(", ") || null;
 }
 
-function matchCatalogItem(spokenName, catalog) {
+export function matchCatalogItem(spokenName, catalog) {
   if (!Array.isArray(catalog) || !catalog.length) return null;
   const spokenNorm = normBasic(spokenName);
   const exact = catalog.find(cat => normBasic(cat.nome) === spokenNorm);
@@ -221,7 +221,7 @@ function matchCatalogItem(spokenName, catalog) {
   return scored[0].cat;
 }
 
-function matchClients(spokenName, clients) {
+export function matchClients(spokenName, clients) {
   const active = (clients || []).filter(client => !client.arquivado_em);
   const qNorm = normBasic(spokenName);
   if (!qNorm) return { status: "missing", matches: [] };
@@ -253,7 +253,7 @@ function matchApartments(spokenName, apartments) {
   }).slice(0, 5);
 }
 
-function findDraftConflicts(inicioEm, fimEm, events, blocks) {
+export function findDraftConflicts(inicioEm, fimEm, events, blocks) {
   if (!inicioEm || !fimEm) return [];
   const start = Date.parse(inicioEm), end = Date.parse(fimEm);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return [];

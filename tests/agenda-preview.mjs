@@ -24,7 +24,8 @@ const records = {
     created("atendimento-teste", today, "09:00", "10:30"),
     created("apartamento-reserva", tomorrow, "11:30", "13:00", { tipo: "apartamento", apartamento_id: apartment.id, cliente_id: null }),
     created("cancelado-teste", today, "16:00", "17:00", { status: "cancelado" }),
-    created("lixeira-teste", today, "17:00", "18:00", { excluido_em: slot(today, "18:00") })
+    created("lixeira-teste", today, "17:00", "18:00", { excluido_em: slot(today, "18:00") }),
+    created("1b4e28ba-2fa1-41d2-883f-0016d3cca427", today, "07:00", "08:00", { tipo: "estofados", descricao_servico: "Sofá de teste" })
   ],
   bloqueios_agenda: [{ id: "bloqueio-teste", inicio_em: slot(today, "14:00"), fim_em: slot(today, "15:00"), motivo: "Compromisso de teste" }],
   clientes: [client], apartamentos: [apartment], agendamento_itens: [],
@@ -35,7 +36,9 @@ const records = {
     { id: "colchao-casal", nome: "Colchão casal", valor: 160, categoria: "colchao", tipo: "base", ativo: true },
     { id: "poltrona-teste", nome: "Poltrona de teste", valor: 80, categoria: "poltrona", tipo: "base", ativo: true }
   ],
-  orcamentos: [], modelos_mensagem: [], campanhas: [], campanha_clientes: [], campanha_contatos: [],
+  orcamentos: [{ id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", cliente_id: client.id, status: "enviado", valor_total: 180, endereco: "Rua de teste, 1", observacoes: null, agendamento_id: null, campanha_cliente_id: null, excluido_em: null, created_at: new Date(Date.now() - 5 * 86400000).toISOString() }],
+  orcamento_itens: [{ id: "item-orcamento-teste", orcamento_id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", catalogo_preco_id: "servico-teste", nome: "Sofá de teste", quantidade: 1, valor_unitario: 120, valor_total: 120, valor_original: null }, { id: "item-orcamento-teste-2", orcamento_id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", catalogo_preco_id: "cadeira-teste", nome: "Cadeira", quantidade: 2, valor_unitario: 30, valor_total: 60, valor_original: null }],
+  modelos_mensagem: [], campanhas: [], campanha_clientes: [], campanha_contatos: [],
   promocao_precos: [], catalogo_regras: []
 };
 
@@ -69,6 +72,10 @@ function matches(row, query) {
 }
 
 function enrich(table, row) {
+  if (table === "orcamentos") return { ...row,
+    clientes: records.clientes.find(c => c.id === row.cliente_id) || null,
+    orcamento_itens: records.orcamento_itens.filter(item => item.orcamento_id === row.id)
+  };
   if (table !== "agendamentos") return row;
   return { ...row,
     clientes: records.clientes.find(c => c.id === row.cliente_id) || null,
@@ -106,12 +113,17 @@ const reserved = createAssistantHandler(
         return Response.json({ choices: [{ message: { role: "assistant", content: "", tool_calls: [{ id: "preview-link_whatsapp", type: "function", function: { name: "link_whatsapp", arguments: JSON.stringify({ telefone: found.telefone, nome: found.nome, mensagem: "Olá, " + found.nome + "! Tudo bem? Passando para lembrar do seu atendimento." }) } }] } }] });
       }
       if (last.tool_call_id === "preview-link_whatsapp") return say("Escrevi a mensagem. Toque no botão para abrir o WhatsApp e enviar.");
+      if (last.tool_call_id.startsWith("preview-propor_")) return say("Montei o cartão. Confira e toque em confirmar.");
       return say("Pronto.");
     }
     const rawQuestion = last.content;
     const question = rawQuestion.toLowerCase();
     const date = question.includes("amanhã") || question.includes("amanha") ? tomorrow : today;
 
+    if (/bloque/.test(question)) return use("propor_bloqueio", { data: date, hora_inicio: "10:00", hora_fim: "12:00", motivo: "Compromisso" });
+    if (/conclu/.test(question)) return use("propor_concluir", { agendamento_id: "1b4e28ba-2fa1-41d2-883f-0016d3cca427", pedir_avaliacao: /avalia/.test(question) });
+    if (/agendar o or[cç]amento/.test(question)) return use("propor_agendar_orcamento", { orcamento_id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", data: tomorrow, hora_inicio: "15:00" });
+    if (/or[cç]amento para/.test(question)) return use("propor_orcamento", { cliente_nome: "Cliente de teste", itens: [{ nome: "Sofá de teste", quantidade: 1 }, { nome: "Cadeira", quantidade: 2 }] });
     const isBooking = /\b(agendar|marcar|agenda)\b/.test(question) && (
       /\bpara\b/.test(question) ||
       /(sof[aá]|cadeira|colch[aã]o|poltrona|faxina|tapete|apartamento|apto)/i.test(question)
@@ -157,6 +169,11 @@ async function api(request, url) {
   if (path === "/functions/v1/assistente-bez") return reserved(request);
   if (path === "/auth/v1/token" && request.method === "POST") return Response.json(session);
   if (path === "/auth/v1/logout") return new Response(null, { status: 204 });
+  if (path === "/auth/v1/user" && request.method === "PUT") {
+    const { data } = await request.json();
+    Object.assign(user.user_metadata, data || {});
+    return Response.json(user);
+  }
   if (path === "/auth/v1/user") return request.headers.get("authorization") === "Bearer " + token
     ? Response.json(user) : Response.json({ message: "Sessão simulada inválida" }, { status: 401 });
   if (path === "/rest/v1/rpc/assistente_bez_reservar_consulta") {
