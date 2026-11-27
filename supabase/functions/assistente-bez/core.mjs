@@ -1,19 +1,3 @@
-export function parseRange(start, end) {
-  const valid = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s + 'T00:00:00Z')) && new Date(s + 'T00:00:00Z').toISOString().slice(0, 10) === s;
-  if (!valid(start) || !valid(end)) throw new Error('Datas inválidas');
-  const a = Date.parse(start + 'T00:00:00Z'), b = Date.parse(end + 'T00:00:00Z');
-  if (b < a || b - a > 30 * 86400000) throw new Error('Período inválido: máximo de 31 dias');
-  return { start: start + 'T00:00:00-03:00', end: new Date(b + 86400000).toISOString().slice(0, 10) + 'T00:00:00-03:00' };
-}
-
-export function validateQuestion(value) {
-  const question = typeof value === "string" ? value.trim() : "";
-  if (!question || question.length > 400) throw new Error("Pergunta inválida");
-  const withoutDates = question.replace(/\b(?:\d{4}-\d{2}-\d{2}|\d{1,2}[-/.]\d{1,2}[-/.]\d{4})\b/g, " ");
-  if (/@|https?:\/\/|www\.|(?:\d[ .()+-]*){8,}/i.test(withoutDates)) throw new Error("Pergunta inválida");
-  return question;
-}
-
 export function validateSchedulingText(value) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text || text.length > 600) throw new Error("Mensagem inválida");
@@ -47,22 +31,8 @@ export function freeWindows(day, events, blocks, startHour = 8, endHour = 18) {
   return free.filter(([a, b]) => b - a >= 30 * 60000).map(([a, b]) => ({ inicio: fmt(a), fim: fmt(b) }));
 }
 
-const dateFormat = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Sao_Paulo", dateStyle: "short" });
 const timeFormat = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-const dateLabel = value => value.slice(0, 10).split("-").reverse().join("/");
 const types = { estofados: "Estofados", faxina: "Faxina avulsa", apartamento: "Apartamento fixo" };
-const statuses = {
-  provisorio: "a confirmar", agendado: "agendado", confirmado: "confirmado",
-  em_andamento: "em andamento", concluido: "concluído"
-};
-
-function daysInRange(inicio, fim) {
-  const days = [];
-  for (let current = Date.parse(inicio + "T00:00:00Z"); current <= Date.parse(fim + "T00:00:00Z"); current += 86400000) {
-    days.push(new Date(current).toISOString().slice(0, 10));
-  }
-  return days;
-}
 
 function locality(value) {
   if (typeof value !== "string") return "";
@@ -148,77 +118,9 @@ function parseBookingPayload(raw) {
 }
 
 export function parseIntent(value) {
-  if (!value) return null;
-  if (value.modo === "agendar") {
-    const booking = parseBookingPayload(value.agendamento);
-    if (!booking) return null;
-    return { mode: "agendar", booking };
-  }
-  if (!["agenda", "livres", "local"].includes(value.modo)) return null;
-  const { modo: mode, inicio, fim } = value;
-  let range;
-  try {
-    range = parseRange(inicio, fim);
-  } catch {
-    return null;
-  }
-  const city = locality(value.cidade);
-  const neighborhood = locality(value.bairro);
-  const validLocality = text => text.length <= 80 && /^[\p{L}0-9.'’ -]*$/u.test(text);
-  if (mode === "local" && (!(city || neighborhood) || !validLocality(city) || !validLocality(neighborhood))) return null;
-  return { mode, range, inicio, fim, city, neighborhood };
-}
-
-export function answerAgenda(intent, events, blocks) {
-  const period = intent.inicio === intent.fim ? dateLabel(intent.inicio) : dateLabel(intent.inicio) + " a " + dateLabel(intent.fim);
-  const activeEvents = events.filter(event => event.status !== "cancelado" && !event.excluido_em);
-  const dayTimes = (start, end) => {
-    const startDay = dateFormat.format(new Date(start)), endDay = dateFormat.format(new Date(end));
-    return dateLabel(startDay) + " " + timeFormat.format(new Date(start)) + "–" +
-      (startDay === endDay ? "" : dateLabel(endDay) + " ") + timeFormat.format(new Date(end));
-  };
-  if (intent.mode === "livres") {
-    const lines = daysInRange(intent.inicio, intent.fim).map(day => {
-      const windows = freeWindows(day, activeEvents, blocks);
-      return dateLabel(day) + " · " + (windows.length
-        ? windows.slice(0, 4).map(slot => slot.inicio + "–" + slot.fim).join(", ") +
-          (windows.length > 4 ? " (mais " + (windows.length - 4) + ")" : "")
-        : "Nenhuma janela de pelo menos 30 minutos");
-    });
-    return { answer: "Horários livres estimados entre 08h e 18h, sem considerar deslocamentos.\n\n" + lines.join("\n") };
-  }
-  let missingLocality = 0;
-  const matching = intent.mode === "local" ? activeEvents.filter(event => {
-    const fields = [
-      [intent.city, locality(event.cidade) || locality(event.clientes?.cidade)],
-      [intent.neighborhood, locality(event.bairro) || locality(event.clientes?.bairro)]
-    ];
-    if (fields.some(([wanted, actual]) => wanted && actual && wanted !== actual)) return false;
-    if (fields.some(([wanted, actual]) => wanted && !actual)) {
-      missingLocality++;
-      return false;
-    }
-    return true;
-  }) : activeEvents;
-  const localityNote = missingLocality ? "\n\nAtendimentos com localidade incompleta para esta busca: " + missingLocality + "." : "";
-  const records = matching.map(event => ({
-    appointmentId: event.id,
-    start: event.inicio_em, end: event.fim_em,
-    label: [types[event.tipo] || "Atendimento", statuses[event.status]].filter(Boolean).join(" · ")
-  })).concat(blocks.map(block => ({ start: block.inicio_em, end: block.fim_em, label: "Bloqueado" })));
-  records.sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
-  if (!records.length) return { answer: "Nenhum registro encontrado para " + period + "." + localityNote };
-  const entries = records.slice(0, 20).map(record => ({
-    label: dayTimes(record.start, record.end) + " · " + record.label,
-    ...(record.appointmentId && { appointmentId: record.appointmentId })
-  }));
-  const note = ((records.length > 20
-    ? "\n\nExibindo 20 de " + records.length + " registros. Consulte um período menor para ver os demais."
-    : "") + localityNote).trim();
-  return {
-    answer: [period, entries.map(entry => entry.label).join("\n"), note].filter(Boolean).join("\n\n"),
-    agenda: { period, entries, note }
-  };
+  if (!value || value.modo !== "agendar") return null;
+  const booking = parseBookingPayload(value.agendamento);
+  return booking ? { mode: "agendar", booking } : null;
 }
 
 /* ---------- Agendamento assistido ---------- */
@@ -247,7 +149,7 @@ function tokenizeItem(value) {
   return words.filter(w => !STOP_WORDS.has(w));
 }
 
-function isSofaName(name) {
+export function isSofaName(name) {
   return /(^|[^a-z])sofas?([^a-z]|$)/.test(normBasic(name));
 }
 
@@ -263,7 +165,7 @@ function formatSaoPauloIso(ms) {
   return { ymd, hm, iso: ymd + "T" + hm + ":00-03:00" };
 }
 
-function combineAddress(base, neighborhood, city) {
+export function combineAddress(base, neighborhood, city) {
   const parts = [];
   const baseNorm = normBasic(base);
   if (base) parts.push(base);
@@ -272,7 +174,7 @@ function combineAddress(base, neighborhood, city) {
   return parts.join(", ") || null;
 }
 
-function matchCatalogItem(spokenName, catalog) {
+export function matchCatalogItem(spokenName, catalog) {
   if (!Array.isArray(catalog) || !catalog.length) return null;
   const spokenNorm = normBasic(spokenName);
   const exact = catalog.find(cat => normBasic(cat.nome) === spokenNorm);
@@ -319,7 +221,7 @@ function matchCatalogItem(spokenName, catalog) {
   return scored[0].cat;
 }
 
-function matchClients(spokenName, clients) {
+export function matchClients(spokenName, clients) {
   const active = (clients || []).filter(client => !client.arquivado_em);
   const qNorm = normBasic(spokenName);
   if (!qNorm) return { status: "missing", matches: [] };
@@ -351,7 +253,7 @@ function matchApartments(spokenName, apartments) {
   }).slice(0, 5);
 }
 
-function findDraftConflicts(inicioEm, fimEm, events, blocks) {
+export function findDraftConflicts(inicioEm, fimEm, events, blocks) {
   if (!inicioEm || !fimEm) return [];
   const start = Date.parse(inicioEm), end = Date.parse(fimEm);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return [];

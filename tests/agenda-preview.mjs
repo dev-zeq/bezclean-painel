@@ -24,7 +24,8 @@ const records = {
     created("atendimento-teste", today, "09:00", "10:30"),
     created("apartamento-reserva", tomorrow, "11:30", "13:00", { tipo: "apartamento", apartamento_id: apartment.id, cliente_id: null }),
     created("cancelado-teste", today, "16:00", "17:00", { status: "cancelado" }),
-    created("lixeira-teste", today, "17:00", "18:00", { excluido_em: slot(today, "18:00") })
+    created("lixeira-teste", today, "17:00", "18:00", { excluido_em: slot(today, "18:00") }),
+    created("1b4e28ba-2fa1-41d2-883f-0016d3cca427", today, "07:00", "08:00", { tipo: "estofados", descricao_servico: "Sofá de teste" })
   ],
   bloqueios_agenda: [{ id: "bloqueio-teste", inicio_em: slot(today, "14:00"), fim_em: slot(today, "15:00"), motivo: "Compromisso de teste" }],
   clientes: [client], apartamentos: [apartment], agendamento_itens: [],
@@ -35,7 +36,9 @@ const records = {
     { id: "colchao-casal", nome: "Colchão casal", valor: 160, categoria: "colchao", tipo: "base", ativo: true },
     { id: "poltrona-teste", nome: "Poltrona de teste", valor: 80, categoria: "poltrona", tipo: "base", ativo: true }
   ],
-  orcamentos: [], modelos_mensagem: [], campanhas: [], campanha_clientes: [], campanha_contatos: [],
+  orcamentos: [{ id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", cliente_id: client.id, status: "enviado", valor_total: 180, endereco: "Rua de teste, 1", observacoes: null, agendamento_id: null, campanha_cliente_id: null, excluido_em: null, created_at: new Date(Date.now() - 5 * 86400000).toISOString() }],
+  orcamento_itens: [{ id: "item-orcamento-teste", orcamento_id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", catalogo_preco_id: "servico-teste", nome: "Sofá de teste", quantidade: 1, valor_unitario: 120, valor_total: 120, valor_original: null }, { id: "item-orcamento-teste-2", orcamento_id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", catalogo_preco_id: "cadeira-teste", nome: "Cadeira", quantidade: 2, valor_unitario: 30, valor_total: 60, valor_original: null }],
+  modelos_mensagem: [], campanhas: [], campanha_clientes: [], campanha_contatos: [],
   promocao_precos: [], catalogo_regras: []
 };
 
@@ -46,9 +49,17 @@ const token = [to64({ alg: "HS256", typ: "JWT" }), to64({ sub: owner, role: "aut
 const session = { access_token: token, refresh_token: "preview-refresh", expires_at: expires, expires_in: 86400, token_type: "bearer", user };
 let quotaDay = today, quotaMinute = 0, dayUses = 0, minuteUses = 0;
 
+const likeMatch = (actual, pattern) => new RegExp("^" + pattern.split("*").map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join(".*") + "$", "i").test(String(actual ?? ""));
+// Grupos simples do PostgREST: or=(a.op.v,b.op.v) e and=(a.op.v,b.op.v).
+const group = value => value.slice(1, -1).split(",").map(part => { const [key, ...rest] = part.split("."); return [key, rest.join(".")]; });
+
 function matches(row, query) {
   return [...query].every(([key, term]) => {
+    if (key === "or") return group(term).some(pair => matches(row, [pair]));
+    if (key === "and") return group(term).every(pair => matches(row, [pair]));
     const [op, value] = term.split(/\.(.*)/s);
+    if (op === "ilike") return likeMatch(row[key], value);
+    if (op === "gte") return Date.parse(row[key]) >= Date.parse(value);
     if (op === "eq") return String(row[key]) === value;
     if (op === "neq") return String(row[key]) !== value;
     if (op === "lt") return Date.parse(row[key]) < Date.parse(value);
@@ -61,6 +72,10 @@ function matches(row, query) {
 }
 
 function enrich(table, row) {
+  if (table === "orcamentos") return { ...row,
+    clientes: records.clientes.find(c => c.id === row.cliente_id) || null,
+    orcamento_itens: records.orcamento_itens.filter(item => item.orcamento_id === row.id)
+  };
   if (table !== "agendamentos") return row;
   return { ...row,
     clientes: records.clientes.find(c => c.id === row.cliente_id) || null,
@@ -80,10 +95,35 @@ const reserved = createAssistantHandler(
         duration_ms: 4200
       });
     }
-    const rawQuestion = JSON.parse(options.body).messages[1].content;
+    const messages = JSON.parse(options.body).messages;
+    const last = messages.at(-1);
+    const say = content => Response.json({ choices: [{ message: { role: "assistant", content } }] });
+    const use = (name, args) => Response.json({ choices: [{ message: { role: "assistant", content: "", tool_calls: [{ id: "preview-" + name, type: "function", function: { name, arguments: JSON.stringify(args) } }] } }] });
+    if (last.role === "tool") {
+      const result = JSON.parse(last.content);
+      if (result.erro) return say("Não consegui: " + result.erro);
+      if (last.tool_call_id === "preview-propor_agendamento") return say("Montei o cartão do agendamento. Confira e toque em Confirmar e agendar.");
+      if (last.tool_call_id === "preview-horarios_livres") {
+        return say(Object.entries(result.livres_por_dia).map(([day, slots]) => day.split("-").reverse().join("/") + ": " + (slots.join(", ") || "sem janelas")).join("\n"));
+      }
+      if (last.tool_call_id === "preview-ver_agenda") return say("Encontrei " + result.atendimentos.length + " atendimento(s) e " + result.bloqueios.length + " bloqueio(s). Toque para abrir.");
+      if (last.tool_call_id === "preview-buscar_clientes") {
+        const found = result.clientes[0];
+        if (!found) return say("Não encontrei esse cliente.");
+        return Response.json({ choices: [{ message: { role: "assistant", content: "", tool_calls: [{ id: "preview-link_whatsapp", type: "function", function: { name: "link_whatsapp", arguments: JSON.stringify({ telefone: found.telefone, nome: found.nome, mensagem: "Olá, " + found.nome + "! Tudo bem? Passando para lembrar do seu atendimento." }) } }] } }] });
+      }
+      if (last.tool_call_id === "preview-link_whatsapp") return say("Escrevi a mensagem. Toque no botão para abrir o WhatsApp e enviar.");
+      if (last.tool_call_id.startsWith("preview-propor_")) return say("Montei o cartão. Confira e toque em confirmar.");
+      return say("Pronto.");
+    }
+    const rawQuestion = last.content;
     const question = rawQuestion.toLowerCase();
     const date = question.includes("amanhã") || question.includes("amanha") ? tomorrow : today;
 
+    if (/bloque/.test(question)) return use("propor_bloqueio", { data: date, hora_inicio: "10:00", hora_fim: "12:00", motivo: "Compromisso" });
+    if (/conclu/.test(question)) return use("propor_concluir", { agendamento_id: "1b4e28ba-2fa1-41d2-883f-0016d3cca427", pedir_avaliacao: /avalia/.test(question) });
+    if (/agendar o or[cç]amento/.test(question)) return use("propor_agendar_orcamento", { orcamento_id: "6f1c2a8e-3b4d-4e5f-9a0b-1c2d3e4f5a6b", data: tomorrow, hora_inicio: "15:00" });
+    if (/or[cç]amento para/.test(question)) return use("propor_orcamento", { cliente_nome: "Cliente de teste", itens: [{ nome: "Sofá de teste", quantidade: 1 }, { nome: "Cadeira", quantidade: 2 }] });
     const isBooking = /\b(agendar|marcar|agenda)\b/.test(question) && (
       /\bpara\b/.test(question) ||
       /(sof[aá]|cadeira|colch[aã]o|poltrona|faxina|tapete|apartamento|apto)/i.test(question)
@@ -104,34 +144,23 @@ const reserved = createAssistantHandler(
       else if (/cadeira/i.test(question)) itens.push({ nome: "Cadeira", quantidade: 1, valor_unitario: null });
       if (/colch[aã]o/i.test(question)) itens.push({ nome: "Colchão casal", quantidade: 1, valor_unitario: null });
       if (/tapete/i.test(question)) itens.push({ nome: "Tapete persa grande", quantidade: 1, valor_unitario: null });
-      return Response.json({
-        choices: [{
-          message: {
-            content: JSON.stringify({
-              modo: "agendar",
-              agendamento: {
-                tipo: question.includes("faxina") ? "faxina" : "estofados",
-                data: date,
-                hora_inicio,
-                cliente_nome: clientMatch ? clientMatch[1].trim() : "Maria Souza",
-                endereco: addrMatch ? addrMatch[1].trim() : null,
-                itens,
-                status: /provis[oó]rio/.test(question) ? "provisorio" : "confirmado"
-              }
-            })
-          }
-        }]
+      return use("propor_agendamento", {
+        tipo: question.includes("faxina") ? "faxina" : "estofados",
+        data: date,
+        hora_inicio,
+        cliente_nome: clientMatch ? clientMatch[1].trim() : "Maria Souza",
+        endereco: addrMatch ? addrMatch[1].trim() : null,
+        itens,
+        status: /provis[oó]rio/.test(question) ? "provisorio" : "confirmado"
       });
     }
 
+    if (/mensagem|whats|lembr/.test(question)) return use("buscar_clientes", { termo: "Cliente de teste" });
     const place = question.includes("itapema") || question.includes("centro");
-    const modo = place ? "local" : /livre|dispon/.test(question) ? "livres" : /hoje|amanhã/.test(question) ? "agenda" : "esclarecer";
-    const interpretation = {
-      modo, inicio: date, fim: date,
-      cidade: question.includes("itapema") ? "Itapema" : null,
-      bairro: question.includes("centro") ? "Centro" : null
-    };
-    return Response.json({ choices: [{ message: { content: JSON.stringify(interpretation) } }] });
+    if (place) return use("ver_agenda", { inicio: date, fim: date, cidade: question.includes("itapema") ? "Itapema" : null, bairro: question.includes("centro") ? "Centro" : null });
+    if (/livre|dispon/.test(question)) return use("horarios_livres", { inicio: date, fim: date });
+    if (/hoje|amanhã/.test(question)) return use("ver_agenda", { inicio: date, fim: date });
+    return say("Posso consultar agenda, horários livres, clientes, orçamentos e faturamento, escrever mensagens de WhatsApp e montar agendamentos.");
   }
 );
 
@@ -140,6 +169,11 @@ async function api(request, url) {
   if (path === "/functions/v1/assistente-bez") return reserved(request);
   if (path === "/auth/v1/token" && request.method === "POST") return Response.json(session);
   if (path === "/auth/v1/logout") return new Response(null, { status: 204 });
+  if (path === "/auth/v1/user" && request.method === "PUT") {
+    const { data } = await request.json();
+    Object.assign(user.user_metadata, data || {});
+    return Response.json(user);
+  }
   if (path === "/auth/v1/user") return request.headers.get("authorization") === "Bearer " + token
     ? Response.json(user) : Response.json({ message: "Sessão simulada inválida" }, { status: 401 });
   if (path === "/rest/v1/rpc/assistente_bez_reservar_consulta") {
@@ -191,7 +225,8 @@ async function api(request, url) {
   }
   if (request.method === "DELETE") records[table] = records[table].filter(row => !rows.includes(row));
   if (!url.searchParams.has("select")) return new Response(null, { status: 204 });
-  rows = rows.map(row => enrich(table, row)).slice(0, Number(url.searchParams.get("limit") || rows.length));
+  const offset = Number(url.searchParams.get("offset") || 0);
+  rows = rows.map(row => enrich(table, row)).slice(offset, offset + Number(url.searchParams.get("limit") || rows.length));
   return Response.json(request.headers.get("accept")?.includes("vnd.pgrst.object") ? rows[0] || null : rows);
 }
 

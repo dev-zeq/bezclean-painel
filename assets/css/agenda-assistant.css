@@ -423,3 +423,9 @@
     grid-template-columns: 1fr;
   }
 }
+#agendaAssistant .bez-bubble p + p,
+#agendaAssistant .bez-bubble p + ul,
+#agendaAssistant .bez-bubble .bez-agenda-period { margin-top: 8px; }
+#agendaAssistant .bez-agenda-period { font-weight: 600; }
+#agendaAssistant .bez-wa-links { display: grid; gap: 6px; margin-top: 10px; white-space: normal; }
+#agendaAssistant .bez-wa-link { color: inherit; }

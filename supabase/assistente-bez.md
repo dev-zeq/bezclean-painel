@@ -2,29 +2,56 @@
 
 A Agenda acessa o Supabase com a sessão já usada pelo painel. A função também valida o token em `/auth/v1/user` e usa o token do usuário para ler `agendamentos`, `bloqueios_agenda`, `clientes`, `apartamentos` e `catalogo_precos`. As políticas RLS conferidas permitem acesso por `owner_id` ao papel `authenticated`.
 
-## Perguntas e agendamento por áudio ou texto
+## Como funciona (desde 27/11/2026)
 
-O DeepSeek recebe a mensagem (ou o áudio convertido no navegador para WAV 16-bit PCM mono 16 kHz em `/v1/tools/asr`) e a data/dia da semana de referência de São Paulo em uma chamada a `deepseek-flash`.
+O Assistente Bez segue o modelo da assistente da Elis: o DeepSeek (`deepseek-flash`) recebe uma **caixa de ferramentas** e decide quais usar, em até 6 rodadas por pergunta. Cada ferramenta é executada pela Edge Function com o token da sessão (RLS por `owner_id`), e o resultado volta para o modelo escrever a resposta.
 
-- **Consultas (`agenda`, `livres`, `local`)**: a resposta final é formatada pela função com os horários e estados consultados. Registros do Supabase, valores e tokens ficam fora da chamada ao modelo.
-- **Agendamento assistido (`agendar`)**: o modelo extrai somente os campos falados ou digitados (serviços, cliente/apartamento, data, horário, endereço e observações), sem inventar preços ou horários. Em seguida, a função consulta o banco com a sessão do usuário (RLS) para vincular cliente/apartamento e tabela de preços (`catalogo_precos`, aplicando a Oferta 40% em sofás quando ativa no perfil) e checar conflitos em `agendamentos` e `bloqueios_agenda`.
-- **Confirmação obrigatória**: nada é salvo automaticamente. O painel exibe um cartão resumo editável com **`Confirmar e agendar`** (grava em transação única via `agendamento_salvar_direto`, criando novo cliente mesmo sem WhatsApp quando não houver cadastro equivalente) e **`Editar no formulário`**.
+| Ferramenta | O que faz | Grava algo? |
+|---|---|---|
+| `ver_agenda` | Atendimentos e bloqueios de até 31 dias, com cliente, telefone, serviço, valor, pagamento e endereço; filtro opcional por cidade/bairro. O painel mostra a lista clicável. | Não |
+| `horarios_livres` | Janelas livres de 30 min ou mais entre 08h e 18h. | Não |
+| `buscar_clientes` | Até 15 clientes por nome, telefone, bairro ou cidade, com os últimos atendimentos. | Não |
+| `clientes_para_retorno` | Clientes com último atendimento concluído há N meses (padrão 6) e nada marcado no futuro. | Não |
+| `orcamentos_pendentes` | Orçamentos em rascunho/enviado e aprovados que ainda não viraram agendamento. | Não |
+| `faturamento` | Até 366 dias: concluído (recebido), ticket médio, pagamento pendente, previsto, por tipo e itens mais vendidos. É receita: o painel não tem despesas. | Não |
+| `tabela_precos` | Catálogo ativo, Oferta 40% e promoção. | Não |
+| `modelos_mensagem` | Modelos da página Mensagens (sem os de campanha). | Não |
+| `link_whatsapp` | Monta o botão `wa.me` com a mensagem pronta (máx. 10 por resposta). **Não envia**: a equipe abre o WhatsApp e envia. | Não |
+| `propor_agendamento` | Mesmo rascunho de antes (`buildBookingDraft`): tabela de preços, Oferta 40%, cliente/apartamento e conflitos. | Não: só grava quando a equipe toca em **Confirmar e agendar** (`agendamento_salvar_direto`) |
+| `propor_orcamento` | Cartão de orçamento novo (rascunho): cliente existente ou novo (com WhatsApp), preços da tabela (`valor_normal`), Oferta 40% em sofás, validade opcional. | No **Confirmar**: `clientes` (se novo) → `orcamentos` → `orcamento_itens`, como a página de Orçamentos; se os itens falharem, o orçamento é apagado |
+| `propor_agendar_orcamento` | Cartão para agendar um orçamento existente com os mesmos itens e valor, com aviso de conflito. | No **Confirmar**: `agendamento_salvar_direto` + orçamento vira `aprovado` com `agendamento_id`; orçamento de campanha usa `campanha_agendar_orcamento` |
+| `propor_bloqueio` | Cartão para bloquear horário ou dia inteiro, avisando o que já existe no horário. | No **Confirmar**: insert em `bloqueios_agenda` |
+| `propor_concluir` | Cartão para marcar atendimento como concluído e, opcionalmente, pedir avaliação (só cliente ativo com WhatsApp válido). | No **Confirmar**: `status = concluido` só se o status não mudou; depois a function `pedir-avaliacao` (uma vez por cliente) |
+
+**Como as ações funcionam:** o servidor valida e monta o cartão (dados faltando, cliente ambíguo, item sem preço, data no passado ou orçamento já agendado voltam como erro para a IA perguntar). Quem grava é o navegador, com a sessão da própria equipe e pelos mesmos caminhos dos botões do painel, só depois do toque em confirmar. "Cancelar" não altera nada. Máximo de 5 cartões por resposta.
+
+**Permissões (Configurações → Assistente Bez):** três chaves, guardadas em `user_metadata.assistente` (o que nunca foi configurado vale como ligado): **Consultar**, **Redigir mensagens** e **Agir com confirmação**. O servidor só entrega à IA as ferramentas liberadas e confere de novo antes de executar; com tudo desligado, responde sem chamar a IA nem gastar cota.
+
+Erros de uma ferramenta (período grande demais, telefone inválido, resultado acima de 20 mil caracteres) voltam para o modelo como mensagem, e ele explica ou tenta de novo com um filtro menor. O tempo total por pergunta é limitado a 110 s.
+
+**Memória da conversa:** o navegador manda as últimas 8 mensagens (só texto, até 1.500 caracteres cada) junto com a pergunta, para entender "e amanhã?". Ela fica só na memória da aba e some ao recarregar ou sair. O servidor não guarda conversas.
+
+**Fora do escopo, de propósito:** editar, remarcar, cancelar e excluir.
 
 ## Privacidade e limites
 
-Registros existentes no Supabase nunca são enviados para o DeepSeek. Como comandos de agendamento por áudio ou texto podem conter nome do cliente, WhatsApp e endereço informados pela equipe, esse conteúdo falado/digitado passa pela API do DeepSeek (`/v1/tools/asr` e `deepseek-flash`) para extração; e-mails e links continuam bloqueados. A resposta ao usuário é sempre em texto e cartões (sem áudio falado).
+**Mudança em relação à versão anterior (decisão de 27/11/2026, "opção A"):** antes, nenhum registro do Supabase ia para o DeepSeek. Agora, para responder, o servidor envia ao DeepSeek os dados que cada ferramenta consultou: nomes, telefones, endereços e observações de clientes, valores de atendimentos e orçamentos, e o histórico curto da conversa. Isso fica sob a política de privacidade e retenção do DeepSeek (empresa chinesa), que deve ser lida antes de usar com dados reais de clientes (LGPD). Só os dados da conta logada são lidos (RLS), e nada é enviado sem alguém perguntar. Tokens, chaves e identificadores de sessão não vão ao modelo.
 
-As consultas de leitura aceitam até 400 caracteres; pedidos de agendamento e transcrições de áudio aceitam até 600 caracteres (áudios WAV/Ogg até 60 segundos / 4 MiB). A disponibilidade é estimada entre 08h e 18h e lista janelas a partir de 30 minutos. As localidades vêm primeiro do agendamento e, quando ausentes, do cadastro vinculado. A função reserva cota antes de chamar o ASR/DeepSeek e retorna HTTP 429 ao atingir 5 consultas por minuto ou 30 por dia por conta, ou 200 por dia no projeto. A cota é compartilhada pelas instâncias e o dia vira à meia-noite em São Paulo.
+Os textos guardados no painel (observações, nomes) são tratados como dados, não como instruções; mesmo assim, como o modelo nunca grava nada sozinho, o pior efeito possível de um texto malicioso é uma resposta errada ou um rascunho que a equipe recusa.
+
+Mensagens aceitam até 600 caracteres, sem e-mails ou links (áudios WAV/Ogg até 60 segundos / 4 MiB). A cota continua: 5 perguntas por minuto e 30 por dia por conta, 200 por dia no projeto, reservada antes de chamar o ASR/DeepSeek (uma pergunta conta uma vez, mesmo usando várias ferramentas).
 
 ## Atualização em produção, após aprovação
 
-1. Confirme que `DEEPSEEK_API_KEY` segue configurada nos segredos do projeto (o endpoint `/v1/tools/asr` usa a mesma chave).
-2. Publique a versão atualizada da Edge Function `assistente-bez` (`supabase/functions/assistente-bez/index.ts` e `core.mjs`).
-3. Confira em produção uma gravação de áudio curta no iPhone e uma confirmação de rascunho na Agenda, além do cache PWA `20261120g`.
+1. Confirme que `DEEPSEEK_API_KEY` segue configurada nos segredos do projeto.
+2. Publique a Edge Function `assistente-bez` com **quatro** arquivos: `index.ts`, `core.mjs`, `ferramentas.mjs` e `acoes.mjs`. Não há migração nova.
+3. Publique o painel (cache `20261127b`).
+4. Teste com a conta real: "agenda de hoje", "orçamentos em aberto", "clientes há mais de 6 meses sem atendimento", "faturamento do mês", "escreve um lembrete para <cliente>" (o botão abre o WhatsApp sem enviar) e um agendamento por áudio (o cartão aparece e nada é salvo antes de confirmar). Depois, um cartão de cada ação: bloqueio de teste (apague em Indisponíveis), orçamento de teste, agendar esse orçamento, concluir um atendimento sem avaliação e, por fim, desligar "Agir" em Configurações e ver a assistente recusar.
+5. Se o DeepSeek não aceitar ferramentas no modelo `deepseek-flash`, a resposta volta "indisponível": nesse caso reverta só a function (passo de reversão abaixo).
 
 ## Validação antes da publicação
 
-O Postgres local cobre o isolamento entre duas identidades, as cotas e a reversão. A prévia local cobre o fluxo de abrir detalhes pela conversa. A chamada ao DeepSeek usa um provedor simulado nesses testes. O projeto de produção é `bezclean-painel` (`qunaqtxadifmwbmycqum`). A conferência de catálogo encontrou RLS por `owner_id` nas tabelas da Agenda. O segredo `DEEPSEEK_API_KEY` foi encontrado na lista do projeto. Em 20/11/2026, uma consulta autenticada confirmou o funcionamento do DeepSeek e retornou oito agendamentos.
+O Postgres local cobre o isolamento entre duas identidades, as cotas e a reversão. A prévia local cobre o fluxo de abrir detalhes pela conversa. A chamada ao DeepSeek usa um provedor simulado nesses testes (inclusive o laço de ferramentas da versão de 27/11/2026, que ainda não foi testado com o DeepSeek real). O projeto de produção é `bezclean-painel` (`qunaqtxadifmwbmycqum`). A conferência de catálogo encontrou RLS por `owner_id` nas tabelas da Agenda. O segredo `DEEPSEEK_API_KEY` foi encontrado na lista do projeto. Em 20/11/2026, uma consulta autenticada confirmou o funcionamento do DeepSeek e retornou oito agendamentos.
 
 ## Ativação em produção, após aprovação
 
