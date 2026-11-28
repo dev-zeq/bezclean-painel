@@ -214,7 +214,9 @@ export function montarAgendarOrcamento(orcamento, args, { eventos = [], bloqueio
   const p = intervalo(args, agoraMs, 120);
   const usouPadrao = !hora(args.hora_fim) && !Number.isInteger(args.duracao_minutos);
   const conflitos = findDraftConflicts(p.inicio_em, p.fim_em, eventos, bloqueios);
-  const endereco = texto(args.endereco, 240) || orcamento.endereco || null;
+  const cli = orcamento.clientes || {};
+  const endereco = texto(args.endereco, 240) || orcamento.endereco || combineAddress(cli.endereco, cli.bairro, cli.cidade);
+  if (!endereco) falha("Sem endereço no orçamento nem no cadastro de " + (cli.nome || "cliente") + ". Pergunte o endereço do atendimento.");
   const descricao = itens.map(i => (i.quantidade > 1 ? i.quantidade + "× " : "") + i.nome).join(" + ");
   const avisos = [];
   if (usouPadrao) avisos.push("Duração padrão de 2 horas (não informada).");

@@ -17,9 +17,9 @@ O Assistente Bez segue o modelo da assistente da Elis: o DeepSeek (`deepseek-fla
 | `tabela_precos` | Catálogo ativo, Oferta 40% e promoção. | Não |
 | `modelos_mensagem` | Modelos da página Mensagens (sem os de campanha). | Não |
 | `link_whatsapp` | Monta o botão `wa.me` com a mensagem pronta (máx. 10 por resposta). **Não envia**: a equipe abre o WhatsApp e envia. | Não |
-| `propor_agendamento` | Mesmo rascunho de antes (`buildBookingDraft`): tabela de preços, Oferta 40%, cliente/apartamento e conflitos. | Não: só grava quando a equipe toca em **Confirmar e agendar** (`agendamento_salvar_direto`) |
+| `propor_agendamento` | Mesmo rascunho de antes (`buildBookingDraft`): tabela de preços, Oferta 40%, cliente/apartamento e conflitos. Sem endereço (fala ou cadastro), a assistente pergunta antes de mostrar o cartão (apartamentos usam o endereço do prédio). | Não: só grava quando a equipe toca em **Confirmar e agendar** (`agendamento_salvar_direto`) |
 | `propor_orcamento` | Cartão de orçamento novo (rascunho): cliente existente ou novo (com WhatsApp), preços da tabela (`valor_normal`), Oferta 40% em sofás, validade opcional. | No **Confirmar**: `clientes` (se novo) → `orcamentos` → `orcamento_itens`, como a página de Orçamentos; se os itens falharem, o orçamento é apagado |
-| `propor_agendar_orcamento` | Cartão para agendar um orçamento existente com os mesmos itens e valor, com aviso de conflito. | No **Confirmar**: `agendamento_salvar_direto` + orçamento vira `aprovado` com `agendamento_id`; orçamento de campanha usa `campanha_agendar_orcamento` |
+| `propor_agendar_orcamento` | Cartão para agendar um orçamento existente com os mesmos itens e valor, com aviso de conflito. Endereço: o dito, o do orçamento ou o do cadastro; sem nenhum, a assistente pergunta antes. | No **Confirmar**: `agendamento_salvar_direto` + orçamento vira `aprovado` com `agendamento_id`; orçamento de campanha usa `campanha_agendar_orcamento` |
 | `propor_bloqueio` | Cartão para bloquear horário ou dia inteiro, avisando o que já existe no horário. | No **Confirmar**: insert em `bloqueios_agenda` |
 | `propor_concluir` | Cartão para marcar atendimento como concluído e, opcionalmente, pedir avaliação (só cliente ativo com WhatsApp válido). | No **Confirmar**: `status = concluido` só se o status não mudou; depois a function `pedir-avaliacao` (uma vez por cliente) |
 

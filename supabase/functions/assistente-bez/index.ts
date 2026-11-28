@@ -421,6 +421,10 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
             dayRange ? readRows("bloqueios_agenda", "inicio_em,fim_em,motivo", dayRange.start, dayRange.end) : []
           ]);
           const draft = buildBookingDraft(intent, { clients, apartments, catalog, events: dayEvents, blocks: dayBlocks, offer40 });
+          // A equipe vai até o cliente: sem endereço (fala ou cadastro), pergunta antes de mostrar o cartão.
+          if (draft.bookingDraft.tipo !== "apartamento" && !draft.bookingDraft.endereco && draft.bookingDraft.clientStatus !== "ambiguous") {
+            throw new ToolError("Sem endereço para " + (draft.bookingDraft.cliente_nome || "o cliente") + " (nem no cadastro). Pergunte o endereço do atendimento.");
+          }
           bookingDraft = draft.bookingDraft;
           draftAnswer = draft.answer;
           const d = draft.bookingDraft;
@@ -448,7 +452,7 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
         async propor_agendar_orcamento(args) {
           if (!idValido(args.orcamento_id)) throw new ToolError("orcamento_id inválido: pegue em orcamentos_pendentes.");
           const [quote] = await rest("orcamentos?" + new URLSearchParams({
-            select: "id,cliente_id,status,valor_total,endereco,observacoes,agendamento_id,campanha_cliente_id,excluido_em,clientes(nome),orcamento_itens(catalogo_preco_id,nome,quantidade,valor_unitario,valor_total,valor_original,observacoes)",
+            select: "id,cliente_id,status,valor_total,endereco,observacoes,agendamento_id,campanha_cliente_id,excluido_em,clientes(nome,endereco,bairro,cidade),orcamento_itens(catalogo_preco_id,nome,quantidade,valor_unitario,valor_total,valor_original,observacoes)",
             id: "eq." + args.orcamento_id, limit: "1"
           }));
           const day = typeof args.data === "string" && /^\d{4}-\d{2}-\d{2}$/.test(args.data) ? range({ inicio: args.data, fim: args.data }) : null;
