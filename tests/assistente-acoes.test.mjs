@@ -169,3 +169,27 @@ test("ids inválidos e erros de validação voltam ao modelo como pergunta", asy
   assert.match(results[1], /Mais de um cliente parecido/);
   assert.ok(!t.calls.some(c => c.url.pathname.endsWith("/agendamentos")));
 });
+
+test("endereço: agendar orçamento usa o do orçamento ou do cadastro e pergunta se não houver nenhum", () => {
+  const quote = { id: "o1", cliente_id: "c1", status: "enviado", valor_total: 100, endereco: null,
+    clientes: { nome: "Bruna", endereco: "Rua 2", bairro: "Centro", cidade: "Itapema" },
+    orcamento_itens: [{ nome: "Cadeira", quantidade: 1, valor_unitario: 100, valor_total: 100 }] };
+  assert.equal(montarAgendarOrcamento(quote, { data: day, hora_inicio: "10:00" }, {}, now).payload.endereco, "Rua 2, Centro, Itapema");
+  assert.equal(montarAgendarOrcamento({ ...quote, endereco: "Rua 9" }, { data: day, hora_inicio: "10:00" }, {}, now).payload.endereco, "Rua 9");
+  assert.throws(() => montarAgendarOrcamento({ ...quote, clientes: { nome: "Bruna" } }, { data: day, hora_inicio: "10:00" }, {}, now), /Pergunte o endereço/);
+  assert.equal(montarAgendarOrcamento({ ...quote, clientes: { nome: "Bruna" } }, { data: day, hora_inicio: "10:00", endereco: "Rua 5" }, {}, now).payload.endereco, "Rua 5");
+});
+
+test("endereço: agendar direto sem endereço pergunta antes de mostrar o cartão", async () => {
+  const ask = args => ({ choices: [{ message: { role: "assistant", content: "", tool_calls: [toolCall("propor_agendamento", args)] } }] });
+  const done = { choices: [{ message: { role: "assistant", content: "Qual o endereço?" } }] };
+  const base = { data: day, hora_inicio: "10:00", cliente_nome: "Paula Nova", itens: [{ nome: "Cadeira", quantidade: 1 }] };
+  const sem = setup({ script: [ask(base), done], tables: { clientes: clients, catalogo_precos: catalog } });
+  const body = await (await sem.ask()).json();
+  assert.equal(body.bookingDraft, undefined);
+  assert.match(sem.bodies[1].messages.at(-1).content, /Pergunte o endereço/);
+  const com = setup({ script: [ask({ ...base, endereco: "Rua 1" }), done], tables: { clientes: clients, catalogo_precos: catalog } });
+  assert.equal((await (await com.ask()).json()).bookingDraft.endereco, "Rua 1");
+  const cadastro = setup({ script: [ask({ ...base, cliente_nome: "João Silva" }), done], tables: { clientes: clients, catalogo_precos: catalog } });
+  assert.match((await (await cadastro.ask()).json()).bookingDraft.endereco, /Av\. Brasil/);
+});
