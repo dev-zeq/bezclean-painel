@@ -76,7 +76,48 @@ async function openDetails(id, { signal, onError = toast } = {}) {
   Manage.bindMenu($("appointmentMenu"), { delete: deleteAppointment });
   if (block) $("detailsContent").insertAdjacentHTML("beforeend", '<p class="trash-note">' + esc(block) + "</p>");
   renderWayNoticeBox(data);
+  renderPaymentBox(data);
   $("detailsDialog").showModal();
+}
+
+/* ---------- Pagamento (faxinas e apartamentos) ---------- */
+// Estofados só são concluídos depois de pagos (o banco marca pago ao concluir).
+// Faxinas e apartamentos podem pagar depois: a equipe marca aqui.
+
+const PAYMENT_LABELS = { pendente: "Pendente", parcial: "Pago em parte", pago: "Pago" };
+
+function renderPaymentBox(appointment) {
+  if (appointment.tipo === "estofados" || appointment.status === "cancelado") return;
+  const box = document.createElement("div");
+  box.className = "payment-box";
+  const label = document.createElement("label");
+  label.textContent = "Pagamento ";
+  const select = document.createElement("select");
+  select.id = "paymentStatus";
+  for (const [value, text] of Object.entries(PAYMENT_LABELS)) select.add(new Option(text, value, false, value === (appointment.status_pagamento || "pendente")));
+  label.append(select);
+  const status = document.createElement("span");
+  status.className = "payment-status";
+  status.setAttribute("role", "status");
+  box.append(label, status);
+  $("detailsContent").append(box);
+  select.onchange = async () => {
+    const previous = appointment.status_pagamento || "pendente", next = select.value;
+    select.disabled = true;
+    status.textContent = "Salvando…";
+    const { data, error } = await db.from("agendamentos").update({ status_pagamento: next })
+      .eq("id", appointment.id).eq("status_pagamento", previous).select("id").maybeSingle();
+    select.disabled = false;
+    if (error || !data) {
+      select.value = previous;
+      status.textContent = error ? ManageCore.friendlyError(error, "Não foi possível salvar.") : "O pagamento mudou. Reabra o atendimento.";
+      return;
+    }
+    appointment.status_pagamento = next;
+    status.textContent = "Salvo.";
+    toast("Pagamento: " + PAYMENT_LABELS[next] + ".");
+    loadAgenda();
+  };
 }
 
 function reviewClient(appointment) {

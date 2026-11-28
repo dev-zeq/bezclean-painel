@@ -77,7 +77,8 @@ test("faturamento conta só concluídos como recebido e separa pendente e previs
     { tipo: "faxina", status: "concluido", valor: 999, excluido_em: day }
   ]);
   assert.deepEqual(r.concluidos, { atendimentos: 2, valor: 500, ticket_medio: 250 });
-  assert.deepEqual(r.pagamento_pendente, { atendimentos: 1, valor: 200 });
+  // Estofados concluído = pago, mesmo com o campo antigo "pendente".
+  assert.deepEqual(r.a_receber_faxinas_apartamentos, { atendimentos: 0, valor: 0 });
   assert.deepEqual(r.previsto_nao_concluido, { atendimentos: 1, valor: 150 });
   assert.deepEqual(r.por_tipo, { Estofados: { atendimentos: 2, valor: 500 } });
   assert.deepEqual(r.itens_mais_vendidos[0], { item: "Sofá 3 módulos", quantidade: 2, valor: 400 });

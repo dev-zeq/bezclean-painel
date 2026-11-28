@@ -11,7 +11,8 @@ import {
   montarAgendarOrcamento,
   montarBloqueio,
   montarConcluir,
-  montarOrcamento
+  montarOrcamento,
+  montarPagamento
 } from "./acoes.mjs";
 import {
   MAX_RODADAS,
@@ -25,6 +26,7 @@ import {
   promptSistema,
   resumoAgenda,
   resumoFaturamento,
+  resumoAReceber,
   resumoOrcamentos,
   termoBusca,
   validarHistorico
@@ -374,6 +376,11 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
           return { periodo: p.inicio + " a " + p.fim, ...resumoFaturamento(events) };
         },
 
+        async a_receber() {
+          const events = await restAll("agendamentos?select=id,tipo,status,status_pagamento,inicio_em,fim_em,descricao_servico,valor,excluido_em,clientes(nome,telefone),apartamentos(nome,contato_nome,contato_telefone)&status=eq.concluido&status_pagamento=in.(pendente,parcial)&tipo=in.(faxina,apartamento)&excluido_em=is.null&order=inicio_em.asc,id.asc", 2000);
+          return resumoAReceber(events);
+        },
+
         async tabela_precos(args) {
           const params: Record<string, string> = {
             select: "nome,valor,categoria,tipo", ativo: "eq.true", "tipo": "in.(base,adicional)",
@@ -483,6 +490,15 @@ export function createAssistantHandler(config: Config, requestUpstream = fetch, 
             id: "eq." + args.agendamento_id, limit: "1"
           }));
           return addAction(montarConcluir(event, args.pedir_avaliacao === true, nowDate.getTime()));
+        },
+
+        async propor_pagamento(args) {
+          if (!idValido(args.agendamento_id)) throw new ToolError("agendamento_id inválido: pegue em a_receber ou ver_agenda.");
+          const [event] = await rest("agendamentos?" + new URLSearchParams({
+            select: "id,tipo,status,status_pagamento,inicio_em,fim_em,descricao_servico,valor,excluido_em,clientes(nome),apartamentos(nome)",
+            id: "eq." + args.agendamento_id, limit: "1"
+          }));
+          return addAction(montarPagamento(event, args.situacao));
         }
       };
 
