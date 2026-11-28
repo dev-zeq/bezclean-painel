@@ -118,6 +118,33 @@ export function montarConcluir(evento, pedirAvaliacao, agoraMs = Date.now()) {
   };
 }
 
+/* ---------- Marcar pagamento (faxinas e apartamentos) ---------- */
+
+const SITUACOES = { pago: "Pago", parcial: "Pago em parte", pendente: "Pendente" };
+
+export function montarPagamento(evento, situacao) {
+  if (!evento || evento.excluido_em) falha("Atendimento não encontrado. Use o id de a_receber ou ver_agenda.");
+  if (!SITUACOES[situacao]) falha("Situação inválida: use pago, parcial ou pendente.");
+  if (evento.tipo === "estofados") falha("Em estofados, concluir já significa pago. Não precisa marcar pagamento.");
+  if (evento.status === "cancelado") falha("Este atendimento está cancelado.");
+  const atual = evento.status_pagamento || "pendente";
+  if (atual === situacao) falha("O pagamento já está como " + SITUACOES[situacao].toLowerCase() + ".");
+  const nome = evento.tipo === "apartamento" ? evento.apartamentos?.nome : evento.clientes?.nome;
+  return {
+    tipo: "pagamento",
+    titulo: "Pagamento",
+    linhas: [
+      ["Atendimento", faixa(Date.parse(evento.inicio_em), Date.parse(evento.fim_em)) + " · " + (nome || "Cliente")],
+      ["Serviço", evento.descricao_servico || "Não informado"],
+      ["Valor", evento.valor == null ? "Não informado" : moeda.format(evento.valor)],
+      ["Pagamento", SITUACOES[atual] + " → " + SITUACOES[situacao]]
+    ],
+    avisos: evento.status !== "concluido" ? ["O atendimento ainda não está concluído."] : [],
+    confirmar: "Marcar como " + SITUACOES[situacao].toLowerCase(),
+    payload: { agendamento_id: evento.id, anterior: atual, status_pagamento: situacao }
+  };
+}
+
 /* ---------- Criar orçamento ---------- */
 
 export function precificarItens(itens, catalogo, oferta40) {

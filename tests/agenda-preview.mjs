@@ -17,7 +17,7 @@ const client = { id: "cliente-teste", nome: "Cliente de teste", telefone: "47999
 const apartment = { id: "apartamento-teste", nome: "Apartamento de teste", edificio: "Edifício de teste", ativo: true, airbnb: true };
 const created = (id, day, start, end, extra = {}) => ({
   id, inicio_em: slot(day, start), fim_em: slot(day, end), descricao_servico: "Limpeza de teste",
-  status: "confirmado", valor: 180, tipo: "faxina", cliente_id: client.id, ...extra
+  status: "confirmado", status_pagamento: "pendente", valor: 180, tipo: "faxina", cliente_id: client.id, ...extra
 });
 const records = {
   agendamentos: [

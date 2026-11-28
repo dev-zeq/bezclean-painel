@@ -17,7 +17,8 @@
     { label: "Horários livres amanhã", prompt: "Quais horários livres amanhã?" },
     { label: "Orçamentos em aberto", prompt: "Quais orçamentos estão em aberto ou faltam agendar?" },
     { label: "Clientes para chamar", prompt: "Quais clientes estão há mais de 6 meses sem atendimento?" },
-    { label: "Faturamento do mês", prompt: "Quanto faturamos este mês?" }
+    { label: "Faturamento do mês", prompt: "Quanto faturamos este mês?" },
+    { label: "Quem está devendo", prompt: "Quais faxinas e apartamentos ainda não foram pagos?" }
   ];
 
   function formatSeconds(sec) {
@@ -736,6 +737,15 @@
         .insert({ inicio_em: payload.inicio_em, fim_em: payload.fim_em, motivo: payload.motivo || null });
       if (error) throw new Error(errorText(error, "Não foi possível bloquear."));
       return { message: "Horário bloqueado." };
+    },
+
+    async pagamento(payload) {
+      const { data, error } = await panelSupabase.from("agendamentos").update({ status_pagamento: payload.status_pagamento })
+        .eq("id", payload.agendamento_id).eq("status_pagamento", payload.anterior).select("id").maybeSingle();
+      if (error) throw new Error(errorText(error, "Não foi possível marcar o pagamento."));
+      if (!data) throw new Error("O pagamento mudou desde a pergunta. Abra a Agenda e confira.");
+      const labels = { pago: "Pagamento marcado como pago.", parcial: "Pagamento marcado como pago em parte.", pendente: "Pagamento marcado como pendente." };
+      return { message: labels[payload.status_pagamento] || "Pagamento atualizado.", appointmentId: payload.agendamento_id };
     },
 
     async concluir(payload) {

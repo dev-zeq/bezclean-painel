@@ -28,7 +28,7 @@ test("permissões: tudo ligado por padrão e cada nível tira só as suas ferram
   assert.deepEqual(permissoes({}), { consultar: true, redigir: true, agir: true });
   assert.deepEqual(permissoes({ assistente: { agir: false } }), { consultar: true, redigir: true, agir: false });
   const nomes = perm => ferramentasPermitidas(perm).map(f => f.function.name);
-  assert.equal(nomes(permissoes({})).length, 14);
+  assert.equal(nomes(permissoes({})).length, 16);
   assert.ok(!nomes(permissoes({ assistente: { agir: false } })).some(n => n.startsWith("propor_")));
   assert.deepEqual(nomes(permissoes({ assistente: { consultar: false, agir: false } })), ["modelos_mensagem", "link_whatsapp"]);
   assert.match(promptSistema(new Date(now), { consultar: true, redigir: false, agir: true }), /desligou em Configurações: redigir mensagens/);
@@ -192,4 +192,32 @@ test("endereço: agendar direto sem endereço pergunta antes de mostrar o cartã
   assert.equal((await (await com.ask()).json()).bookingDraft.endereco, "Rua 1");
   const cadastro = setup({ script: [ask({ ...base, cliente_nome: "João Silva" }), done], tables: { clientes: clients, catalogo_precos: catalog } });
   assert.match((await (await cadastro.ask()).json()).bookingDraft.endereco, /Av\. Brasil/);
+});
+
+test("pagamento: estofados concluído é pago; faxinas e apartamentos seguem o que foi marcado", async () => {
+  const { pagamentoEfetivo, resumoAReceber, resumoFaturamento } = await import("../supabase/functions/assistente-bez/ferramentas.mjs");
+  const { montarPagamento } = await import("../supabase/functions/assistente-bez/acoes.mjs");
+  assert.equal(pagamentoEfetivo({ tipo: "estofados", status: "concluido", status_pagamento: "pendente" }), "pago");
+  assert.equal(pagamentoEfetivo({ tipo: "faxina", status: "concluido", status_pagamento: "pendente" }), "pendente");
+  assert.equal(pagamentoEfetivo({ tipo: "faxina", status: "confirmado" }), null);
+  const evs = [
+    { id: "f1", tipo: "faxina", status: "concluido", status_pagamento: "pendente", valor: 150, inicio_em: "2026-11-20T09:00:00-03:00", fim_em: "2026-11-20T13:00:00-03:00", clientes: { nome: "Dona Maria", telefone: "47999990001" } },
+    { id: "p1", tipo: "apartamento", status: "concluido", status_pagamento: "parcial", valor: 200, inicio_em: "2026-11-21T09:00:00-03:00", fim_em: "2026-11-21T11:00:00-03:00", apartamentos: { nome: "Apto 101", contato_nome: "Carlos", contato_telefone: "47988880000" } },
+    { id: "f2", tipo: "faxina", status: "concluido", status_pagamento: "pago", valor: 150 },
+    { id: "e1", tipo: "estofados", status: "concluido", status_pagamento: "pendente", valor: 300 }
+  ];
+  const r = resumoAReceber(evs);
+  assert.equal(r.quantidade, 2);
+  assert.equal(r.valor, 350);
+  assert.deepEqual(r.atendimentos.map(a => [a.cliente, a.telefone]), [["Dona Maria", "47999990001"], ["Apto 101", "47988880000"]]);
+  assert.deepEqual(resumoFaturamento(evs).a_receber_faxinas_apartamentos, { atendimentos: 2, valor: 350 });
+
+  const card = montarPagamento(evs[0], "pago");
+  assert.deepEqual(card.payload, { agendamento_id: "f1", anterior: "pendente", status_pagamento: "pago" });
+  assert.deepEqual(card.linhas[3], ["Pagamento", "Pendente → Pago"]);
+  assert.equal(card.confirmar, "Marcar como pago");
+  assert.throws(() => montarPagamento(evs[3], "pago"), /estofados, concluir já significa pago/);
+  assert.throws(() => montarPagamento(evs[2], "pago"), /já está como pago/);
+  assert.throws(() => montarPagamento({ ...evs[0], status: "cancelado" }, "pago"), /cancelado/);
+  assert.throws(() => montarPagamento(evs[0], "talvez"), /Situação inválida/);
 });

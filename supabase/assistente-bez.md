@@ -14,6 +14,7 @@ O Assistente Bez segue o modelo da assistente da Elis: o DeepSeek (`deepseek-fla
 | `clientes_para_retorno` | Clientes com último atendimento concluído há N meses (padrão 6) e nada marcado no futuro. | Não |
 | `orcamentos_pendentes` | Orçamentos em rascunho/enviado e aprovados que ainda não viraram agendamento. | Não |
 | `faturamento` | Até 366 dias: concluído (recebido), ticket médio, pagamento pendente, previsto, por tipo e itens mais vendidos. É receita: o painel não tem despesas. | Não |
+| `a_receber` | Faxinas e apartamentos concluídos ainda não pagos (pendente ou parcial), com contato e valor. Estofados não entram: concluído = pago. | Não |
 | `tabela_precos` | Catálogo ativo, Oferta 40% e promoção. | Não |
 | `modelos_mensagem` | Modelos da página Mensagens (sem os de campanha). | Não |
 | `link_whatsapp` | Monta o botão `wa.me` com a mensagem pronta (máx. 10 por resposta). **Não envia**: a equipe abre o WhatsApp e envia. | Não |
@@ -22,6 +23,10 @@ O Assistente Bez segue o modelo da assistente da Elis: o DeepSeek (`deepseek-fla
 | `propor_agendar_orcamento` | Cartão para agendar um orçamento existente com os mesmos itens e valor, com aviso de conflito. Endereço: o dito, o do orçamento ou o do cadastro; sem nenhum, a assistente pergunta antes. | No **Confirmar**: `agendamento_salvar_direto` + orçamento vira `aprovado` com `agendamento_id`; orçamento de campanha usa `campanha_agendar_orcamento` |
 | `propor_bloqueio` | Cartão para bloquear horário ou dia inteiro, avisando o que já existe no horário. | No **Confirmar**: insert em `bloqueios_agenda` |
 | `propor_concluir` | Cartão para marcar atendimento como concluído e, opcionalmente, pedir avaliação (só cliente ativo com WhatsApp válido). | No **Confirmar**: `status = concluido` só se o status não mudou; depois a function `pedir-avaliacao` (uma vez por cliente) |
+
+| `propor_pagamento` | Cartão para marcar o pagamento de uma faxina ou apartamento como pago, parcial ou pendente (recusa estofados e cancelados). | No **Confirmar**: `status_pagamento` só se ele não mudou desde a pergunta |
+
+**Pagamento (desde 28/11/2026):** estofados só são concluídos depois de pagos, e o banco marca `pago` sozinho ao concluir (gatilho `agendamentos_estofados_concluido_pago`, [migração](migrations/20261128120000_pagamento_estofados_e_antigos.sql), [reversão](pagamento_estofados_rollback.sql)). Faxinas e apartamentos podem pagar depois: os detalhes do atendimento ganharam o seletor Pendente / Pago em parte / Pago. Todos os concluídos antigos foram marcados como pagos, a pedido da equipe.
 
 **Como as ações funcionam:** o servidor valida e monta o cartão (dados faltando, cliente ambíguo, item sem preço, data no passado ou orçamento já agendado voltam como erro para a IA perguntar). Quem grava é o navegador, com a sessão da própria equipe e pelos mesmos caminhos dos botões do painel, só depois do toque em confirmar. "Cancelar" não altera nada. Máximo de 5 cartões por resposta.
 
@@ -45,7 +50,7 @@ Mensagens aceitam até 600 caracteres, sem e-mails ou links (áudios WAV/Ogg at�
 
 1. Confirme que `DEEPSEEK_API_KEY` segue configurada nos segredos do projeto.
 2. Publique a Edge Function `assistente-bez` com **quatro** arquivos: `index.ts`, `core.mjs`, `ferramentas.mjs` e `acoes.mjs`. Não há migração nova.
-3. Publique o painel (cache `20261127b`).
+3. Publique o painel (cache `20261128a`).
 4. Teste com a conta real: "agenda de hoje", "orçamentos em aberto", "clientes há mais de 6 meses sem atendimento", "faturamento do mês", "escreve um lembrete para <cliente>" (o botão abre o WhatsApp sem enviar) e um agendamento por áudio (o cartão aparece e nada é salvo antes de confirmar). Depois, um cartão de cada ação: bloqueio de teste (apague em Indisponíveis), orçamento de teste, agendar esse orçamento, concluir um atendimento sem avaliação e, por fim, desligar "Agir" em Configurações e ver a assistente recusar.
 5. Se o DeepSeek não aceitar ferramentas no modelo `deepseek-flash`, a resposta volta "indisponível": nesse caso reverta só a function (passo de reversão abaixo).
 
